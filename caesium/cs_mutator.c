@@ -20,10 +20,10 @@ void cs_mutator_free(CsMutator* mut) {
 
 void cs_mutator_start(
   CsMutator* mut,
-  int (*fn)(struct CsMutator*, void*),
+  int (*entry_point)(struct CsMutator*, void*),
   void* data)
 {
-  mut->entry_point = fn;
+  mut->entry_point = entry_point;
   mut->data = data;
   if (thrd_create(&mut->thread, mut_main, mut) != thrd_success)
     cs_exit(CS_REASON_THRDFATAL);

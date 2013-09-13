@@ -21,7 +21,7 @@ void cs_mutator_free(CsMutator* mut);
 
 void cs_mutator_start(
   CsMutator* mut,
-  int (*fn)(struct CsMutator*, void*),
+  int (*entry_point)(struct CsMutator*, void*),
   void* data);
 
 #endif /* _CS_MUTATOR_H_ */

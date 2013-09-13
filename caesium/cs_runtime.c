@@ -1,5 +1,6 @@
 #include "cs_runtime.h"
 #include "cs_mutator.h"
+#include "cs_lexer.h"
 
 CsRuntime* cs_runtime_new() {
   CsRuntime* cs = cs_alloc_object(CsRuntime);
@@ -9,7 +10,13 @@ CsRuntime* cs_runtime_new() {
   return cs;
 }
 
+bool free_mutators(void* node, void* data) {
+  cs_mutator_free((CsMutator*) node);
+  return true;
+}
+
 void cs_runtime_free(CsRuntime* cs) {
+  cs_list_traverse(cs->mutators, free_mutators, NULL);
   cs_list_free(cs->mutators);
   cs_free_object(cs);
 }
@@ -33,8 +40,10 @@ void cs_runtime_dofile(CsRuntime* cs, const char* filename) {
 }
 
 int entry(CsMutator* mut, void* data) {
-  const char* u8str = data;
-  cs_error("YEAH I GOT!!!: %s\n", u8str);
+  // const char* u8str = data;
+  CsLexer* lex = cs_lexer_new();
+  cs_lexer_free(lex);
+
   return 0;
 } 
 
@@ -42,4 +51,7 @@ void cs_runtime_dostring(CsRuntime* cs, const char* u8str) {
   CsMutator* mut0 = cs_mutator_new(cs);
   cs_list_push_back(cs->mutators, mut0);
   cs_mutator_start(mut0, entry, (void*) u8str);
+  if (thrd_join(mut0->thread, NULL) != thrd_success)
+    cs_exit(CS_REASON_THRDFATAL);
+  free((void*) u8str);
 }
