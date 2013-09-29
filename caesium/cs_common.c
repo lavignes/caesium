@@ -5,6 +5,7 @@ const char* CS_REASONS[] = {
   "System out of memory x_x",
   "File can't be opened",
   "A fatal OS error occured in the threading subsystem :/",
+  "Attempted to access an unimplemented feature",
 };
 
 void cs_exit(CsReason reason) {

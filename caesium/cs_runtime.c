@@ -1,6 +1,7 @@
 #include "cs_runtime.h"
 #include "cs_mutator.h"
 #include "cs_lexer.h"
+#include "cs_assembler.h"
 
 CsRuntime* cs_runtime_new() {
   CsRuntime* cs = cs_alloc_object(CsRuntime);
@@ -36,18 +37,33 @@ void cs_runtime_dofile(CsRuntime* cs, const char* filename) {
     cs_exit(CS_REASON_NOMEM);
   fread(file_buffer, file_size, 1, input_file);
   fclose(input_file);
-  cs_runtime_dostring(cs, file_buffer);
+  //cs_runtime_dostring(cs, file_buffer);
+  cs_runtime_doassembly(cs, file_buffer);
 }
 
-int entry(CsMutator* mut, void* data) {
-  // const char* u8str = data;
-  CsLexer* lex = cs_lexer_new();
-  cs_lexer_free(lex);
-
-  return 0;
-} 
-
 void cs_runtime_dostring(CsRuntime* cs, const char* u8str) {
+  cs_exit(CS_REASON_UNIMPLEMENTED);
+  // CsMutator* mut0 = cs_mutator_new(cs);
+  // cs_list_push_back(cs->mutators, mut0);
+  // cs_mutator_start(mut0, entry, (void*) u8str);
+  // if (thrd_join(mut0->thread, NULL) != thrd_success)
+  //   cs_exit(CS_REASON_THRDFATAL);
+  // free((void*) u8str);
+}
+
+/*
+  Assembly-based mutator entry point
+ */
+static int entry(CsMutator* mut, void* data) {
+  const char* u8str = data;
+  CsAssembler* assembler = cs_assembler_new();
+  CsBytecode* code = cs_assembler_assemble(assembler, u8str);
+  cs_assembler_free(assembler);
+  (void) code;
+  return 0;
+}
+
+void cs_runtime_doassembly(CsRuntime* cs, const char* u8str) {
   CsMutator* mut0 = cs_mutator_new(cs);
   cs_list_push_back(cs->mutators, mut0);
   cs_mutator_start(mut0, entry, (void*) u8str);

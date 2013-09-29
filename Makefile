@@ -36,7 +36,7 @@ $(LEMON_GEN):
 clean:
 	rm -f $(BIN_DIR)/* $(LIB_DIR)/*.a *.o
 	rm -f $(addprefix $(CS_DIR)/,*.o)
-	rm -f $(addprefix $(CS_DIR)/, cs_lemon.c cs_lemon.h cs_lemon.out)
+	rm -f $(addprefix $(CS_DIR)/, cs_lemon.out)
 	rm -f $(addprefix $(TINYC_DIR)/,*.o)
 
 test: libcs

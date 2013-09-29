@@ -137,3 +137,59 @@ int cs_unichar_to_utf8(CsUnichar c, char* buffer) {
   }
   return len;
 }
+
+char* cs_utf8_substr(const char* u8str, long start, long end) {
+  char *first, *last, *output;
+  first = cs_utf8_offset_to_pointer(u8str, start);
+  last = cs_utf8_offset_to_pointer(u8str, end - start);
+  output = malloc(last - first + 1);
+  cs_return_unless(output, NULL);
+  memcpy(output, first, last - first);
+  output[last - first] = 0;
+  return output;
+}
+
+char* cs_utf8_offset_to_pointer(const char* u8str, long offset) {
+  const char* start = u8str;
+  if (offset > 0) {
+    while (offset--) {
+      start = utf8_next(start);
+    }
+  } else {
+    const char* s;
+    while (offset) {
+      s = start;
+      start += offset;
+      while ((*start & 0xc0) == 0x80) {
+        s--;
+      }
+      offset += cs_utf8_pointer_to_offset(start, s);
+    }
+  }
+  return (char*) start;
+}
+
+long cs_utf8_pointer_to_offset(const char* u8str, const char* c) {
+  const char* start = u8str;
+  long offset = 0;
+  if (c < u8str) {
+    offset = -cs_utf8_pointer_to_offset(c, u8str);
+  } else {
+    while (start < c) {
+      start = utf8_next(start);
+      offset++;
+    }
+  }
+  return offset;
+}
+
+char* cs_utf8_next(const char* u8str, const char* end) {
+  if (*u8str) {
+    if (end) {
+      for (++u8str; u8str < end && (*u8str & 0xc0) == 0x80; ++u8str);
+    } else {
+      for (++u8str; (*u8str & 0xc0) == 0x80; ++u8str);
+    }
+  }
+  return (u8str == end)? NULL : (char*) u8str;
+}

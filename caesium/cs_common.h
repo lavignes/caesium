@@ -37,6 +37,7 @@ typedef enum CsReason {
   CS_REASON_NOMEM,
   CS_REASON_BADFILE,
   CS_REASON_THRDFATAL,
+  CS_REASON_UNIMPLEMENTED,
 
 } CsReason;
 

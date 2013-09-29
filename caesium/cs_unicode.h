@@ -44,4 +44,37 @@ char* cs_utf8_strchr(const char* u8str, ssize_t max, CsUnichar c);
  */
 int cs_unichar_to_utf8(CsUnichar c, char* buffer);
 
+/**
+ * Copy a substring out of a utf8 string
+ * @param  u8str a utf8 string
+ * @param  start starting character offset
+ * @param  end   ending character offset
+ * @return       a newly allocated substring
+ */
+char* cs_utf8_substr(const char* u8str, long start, long end);
+
+/**
+ * Get character pointer at offset in a utf8 string
+ * @param  u8str  a utf8 string
+ * @param  offset character offset (can be negative for reverse offset)
+ * @return        pointer to character at that offset
+ */
+char* cs_utf8_offset_to_pointer(const char* u8str, long offset);
+
+/**
+ * Given a character pointer, get its offset in a utf8 string
+ * @param  u8str a utf8 string
+ * @param  c     a pointer in the string
+ * @return       the character offset
+ */
+long cs_utf8_pointer_to_offset(const char* u8str, const char* c);
+
+/**
+ * Find the next character in a utf8 string.
+ * @param  u8str a utf8 string
+ * @param  end   end of utf8 string or NULL if it is NULL-terminated
+ * @return       a pointer to the next character or NULL
+ */
+char* cs_utf8_next(const char* u8str, const char* end);
+
 #endif /* _CS_UNICODE_H_ */

@@ -1,6 +1,6 @@
 #include "cs_mutator.h"
 
-int mut_main(void* data) {
+static int mut_main(void* data) {
   CsMutator* mut = data;
   return mut->entry_point(mut, mut->data);
 }
