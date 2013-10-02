@@ -21,9 +21,14 @@ typedef struct CsAssembler {
   CsList* statestack;
 } CsAssembler;
 
+typedef enum CsPseudoOp {
+  CS_PSEUDO_MAIN,
+  CS_PSEUDO_CONST,
+} CsPseudoOp;
+
 CsAssembler* cs_assembler_new();
 
-CsBytecode* cs_assembler_assemble(CsAssembler* assembler, const char* u8str);
+CsByteChunk* cs_assembler_assemble(CsAssembler* assembler, const char* u8str);
 
 void cs_assembler_free(CsAssembler* assembler);
 

@@ -57,9 +57,9 @@ void cs_runtime_dostring(CsRuntime* cs, const char* u8str) {
 static int entry(CsMutator* mut, void* data) {
   const char* u8str = data;
   CsAssembler* assembler = cs_assembler_new();
-  CsBytecode* code = cs_assembler_assemble(assembler, u8str);
+  CsByteChunk* chunk = cs_assembler_assemble(assembler, u8str);
   cs_assembler_free(assembler);
-  (void) code;
+  (void) chunk;
   return 0;
 }
 

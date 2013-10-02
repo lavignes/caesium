@@ -17,13 +17,14 @@ CsAssembler* cs_assembler_new() {
   return assembler;
 }
 
-CsBytecode* cs_assembler_assemble(CsAssembler* assembler, const char* u8str) {
+CsByteChunk* cs_assembler_assemble(CsAssembler* assembler, const char* u8str) {
   long start, end;
   char* buffer;
   assembler->filesize = cs_utf8_strnlen(u8str, -1);
   assembler->file = u8str;
   assembler->pos = u8str;
   assembler->offset = 0;
+  // A simple LR(1) parser
   while (assembler->offset < assembler->filesize) {
     CsAsmState state = (uintptr_t) cs_list_peek_back(assembler->statestack);
     // invariables

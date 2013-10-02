@@ -184,6 +184,7 @@ long cs_utf8_pointer_to_offset(const char* u8str, const char* c) {
 }
 
 char* cs_utf8_next(const char* u8str, const char* end) {
+  cs_return_if(u8str == end, NULL);
   if (*u8str) {
     if (end) {
       for (++u8str; u8str < end && (*u8str & 0xc0) == 0x80; ++u8str);
