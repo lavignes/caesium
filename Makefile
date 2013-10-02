@@ -4,7 +4,7 @@ LIB_DIR = lib
 BIN_DIR = bin
 INC_DIR = include
 
-CFLAGS = -Iinclude/ -g -Wall -Wextra -Werror -Wno-unused-parameter -Wno-unused-function -std=gnu99
+CFLAGS = -Iinclude/ -g -Wall -Wextra -Werror -Wno-unused-parameter -Wno-unused-function -std=gnu99 -DCS_DEBUG
 LDFLAGS = -L$(LIB_DIR)/
 
 CS_DIR = caesium

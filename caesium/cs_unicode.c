@@ -141,7 +141,7 @@ int cs_unichar_to_utf8(CsUnichar c, char* buffer) {
 char* cs_utf8_substr(const char* u8str, long start, long end) {
   char *first, *last, *output;
   first = cs_utf8_offset_to_pointer(u8str, start);
-  last = cs_utf8_offset_to_pointer(u8str, end - start);
+  last = cs_utf8_offset_to_pointer(u8str, end);
   output = malloc(last - first + 1);
   cs_return_unless(output, NULL);
   memcpy(output, first, last - first);

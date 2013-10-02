@@ -10,6 +10,7 @@
 #include <string.h>
 #include <assert.h>
 #include <stdint.h>
+#include <inttypes.h>
 #include <stdio.h>
 
 /*
@@ -30,6 +31,12 @@
 #define cs_free_object(obj) (free(obj))
 
 #define cs_error(...) fprintf(stderr, __VA_ARGS__)
+
+#ifdef CS_DEBUG
+#define cs_debug(...) fprintf(stderr, __VA_ARGS__)
+#else
+#define cs_debug(...) (void)
+#endif
 
 typedef enum CsReason {
 

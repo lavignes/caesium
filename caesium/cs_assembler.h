@@ -2,12 +2,23 @@
 #define _CS_ASSEMBLER_H_
 
 #include "cs_bytecode.h"
+#include "cs_list.h"
+
+typedef enum CsAsmState {
+  CS_ASM_STATE_INIT,     // initial parser state
+  CS_ASM_STATE_COMMENT,
+  CS_ASM_STATE_PSEUDO,
+  CS_ASM_STATE_OP,
+} CsAsmState;
 
 typedef struct CsAssembler {
   size_t filesize; // size of file in characters
   size_t offset;   // offset in characters
+  size_t line;
+  size_t col;
   const char* file;
   const char* pos;
+  CsList* statestack;
 } CsAssembler;
 
 CsAssembler* cs_assembler_new();
