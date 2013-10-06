@@ -17,8 +17,7 @@ typedef enum CsAsmState {
 } CsAsmState;
 
 typedef struct CsAssembler {
-  size_t filesize; // size of file in characters
-  size_t offset;   // offset in characters
+  size_t offset; // offset in characters
   size_t line;
   size_t col;
   const char* file;
@@ -34,7 +33,10 @@ typedef enum CsPseudoOp {
 
 CsAssembler* cs_assembler_new();
 
-CsByteChunk* cs_assembler_assemble(CsAssembler* assembler, const char* u8str);
+CsByteChunk* cs_assembler_assemble(
+  CsAssembler* assembler,
+  const char* u8str,
+  size_t size);
 
 void cs_assembler_free(CsAssembler* assembler);
 

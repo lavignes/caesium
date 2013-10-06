@@ -17,6 +17,8 @@ void hash_double(CsHash* hash) {
   hash->buckets = malloc(sizeof(CsPair*) * hash->size);
   if (hash->buckets == NULL)
     cs_exit(CS_REASON_NOMEM);
+  for (i = 0; i < hash->size; i++)
+    hash->buckets[i] = NULL;
   for (i = 0; i < old_size; i++) {
     pair = old_buckets[i];
     if (pair != NULL && pair != DUMMY) {
@@ -56,7 +58,8 @@ CsPair* cs_hash_insert(
   uint32_t i = h % hash->size;
   CsPair* pair = hash->buckets[i];
   while (pair != NULL) {
-    if (pair != DUMMY && h == pair->hash && strcmp(key, pair->u8key) == 0) {
+    if (pair != DUMMY && h == pair->hash
+      && strncmp(key, pair->u8key, pair->key_len) == 0) {
       pair->value = value;
       return pair;
     }
@@ -86,7 +89,8 @@ CsPair* cs_hash_remove(CsHash* hash, const char* key, size_t key_len) {
   uint32_t i = h % hash->size;
   CsPair* pair = hash->buckets[i];
   while (pair != NULL) {
-    if (pair != DUMMY && h == pair->hash && strcmp(key, pair->u8key) == 0) {
+    if (pair != DUMMY && h == pair->hash
+      && strncmp(key, pair->u8key, pair->key_len) == 0) {
       hash->buckets[i] = (void*) DUMMY;
       return pair;
     }
@@ -101,7 +105,8 @@ CsPair* cs_hash_find(CsHash* hash, const char* key, size_t key_len) {
   uint32_t i = h % hash->size;
   CsPair* pair = hash->buckets[i];
   while (pair != NULL) {
-    if (pair != DUMMY && h == pair->hash && strcmp(key, pair->u8key) == 0) {
+    if (pair != DUMMY && h == pair->hash
+      && strncmp(key, pair->u8key, pair->key_len) == 0) {
       return pair;
     }
     i = (i == hash->size)? 0 : i + 1;

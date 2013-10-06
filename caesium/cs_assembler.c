@@ -3,8 +3,8 @@
 #include "cs_unicode.h"
 #include "cs_hash.h"
 
-static CsHash* assembler_pseudo_ops;
-static CsHash* assembler_ops;
+static CsHash* assembler_pseudo_ops = NULL;
+static CsHash* assembler_ops = NULL;
 
 void setup_assembler() {
   assembler_pseudo_ops = cs_hash_new();
@@ -48,7 +48,6 @@ CsAssembler* cs_assembler_new() {
   CsAssembler* assembler = cs_alloc_object(CsAssembler);
   if (assembler == NULL)
     cs_exit(CS_REASON_NOMEM);
-  assembler->filesize = 0;
   assembler->offset = 0;
   assembler->line = 1;
   assembler->col = 1;
@@ -59,19 +58,23 @@ CsAssembler* cs_assembler_new() {
   return assembler;
 }
 
-CsByteChunk* cs_assembler_assemble(CsAssembler* assembler, const char* u8str) {
+CsByteChunk* cs_assembler_assemble(
+  CsAssembler* assembler,
+  const char* u8str,
+  size_t size)
+{
   long start, end;
   size_t len;
+  size_t nchars = cs_utf8_strnlen(u8str, size);
   char* buffer;
   bool new_line = false;
   CsPair* pair;
   CsPseudoOp pop;
-  assembler->filesize = cs_utf8_strnlen(u8str, -1);
   assembler->file = u8str;
   assembler->pos = u8str;
   assembler->offset = 0;
   // A simple LR(1) parser
-  while (assembler->offset < assembler->filesize) {
+  while (true) {
     new_line = false;
     CsAsmState state = (uintptr_t) cs_list_peek_back(assembler->statestack);
     // invariables
@@ -152,6 +155,10 @@ CsByteChunk* cs_assembler_assemble(CsAssembler* assembler, const char* u8str) {
                     (void*) CS_ASM_STATE_CONST);
                   break;
 
+                case CS_PSEUDO_END:
+                  cs_list_pop_back(assembler->statestack);
+                  break;
+
                 default:
                   break;
               }
@@ -188,7 +195,7 @@ CsByteChunk* cs_assembler_assemble(CsAssembler* assembler, const char* u8str) {
             buffer = cs_utf8_substr(assembler->file, start, end);
             if (buffer == NULL)
               cs_exit(CS_REASON_NOMEM);
-            cs_debug("const number!!!: %s\n", buffer);
+            cs_debug("read const!: %s\n", buffer);
             cs_free_object(buffer);
 
           default:
@@ -212,7 +219,7 @@ CsByteChunk* cs_assembler_assemble(CsAssembler* assembler, const char* u8str) {
             buffer = cs_utf8_substr(assembler->file, start+1, end);
             if (buffer == NULL)
               cs_exit(CS_REASON_NOMEM);
-            cs_debug("read const!: %s\n", buffer);
+            cs_debug("read const! %zu: '%s'\n", end-start-1, buffer);
             cs_free_object(buffer);
             break;
 
@@ -275,8 +282,11 @@ CsByteChunk* cs_assembler_assemble(CsAssembler* assembler, const char* u8str) {
       assembler->col = 0;
       assembler->line++;
     }
-    assembler->pos = cs_utf8_next(assembler->pos, NULL);
+
     assembler->offset++;
+    if (assembler->offset >= nchars)
+      break;
+    assembler->pos = cs_utf8_next(assembler->pos, NULL);
     assembler->col++;
   }
 
