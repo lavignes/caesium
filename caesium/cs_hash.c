@@ -27,6 +27,7 @@ void hash_double(CsHash* hash) {
       hash->buckets[pos] = pair;
     }
   }
+  cs_free_object(old_buckets);
 }
 
 CsHash* cs_hash_new() {
@@ -110,11 +111,28 @@ CsPair* cs_hash_find(CsHash* hash, const char* key, size_t key_len) {
 }
 
 void cs_hash_traverse(CsHash* hash, bool (*fn)(CsPair*, void*), void* data) {
-
+  uint32_t i;
+  CsPair* pair;
+  for (i = 0; i < hash->size; i++) {
+    pair = hash->buckets[i];
+    if (pair == NULL || pair == DUMMY)
+      continue;
+    if (fn(pair, data))
+      break;
+  }
 }
 
 void cs_hash_free(CsHash* hash) {
-
+  uint32_t i;
+  CsPair* pair;
+  for (i = 0; i < hash->size; i++) {
+    pair = hash->buckets[i];
+    if (pair == NULL || pair == DUMMY)
+      continue;
+    cs_pair_free(pair);
+  }
+  cs_free_object(hash->buckets);
+  cs_free_object(hash);
 }
 
 void cs_pair_free(CsPair* pair) {

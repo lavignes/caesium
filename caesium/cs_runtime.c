@@ -4,6 +4,7 @@
 #include "cs_assembler.h"
 
 extern void setup_assembler();
+extern void shutdown_assembler();
 
 CsRuntime* cs_runtime_new() {
   CsRuntime* cs = cs_alloc_object(CsRuntime);
@@ -22,6 +23,7 @@ bool free_mutators(void* node, void* data) {
 void cs_runtime_free(CsRuntime* cs) {
   cs_list_traverse(cs->mutators, free_mutators, NULL);
   cs_list_free(cs->mutators);
+  shutdown_assembler();
   cs_free_object(cs);
 }
 

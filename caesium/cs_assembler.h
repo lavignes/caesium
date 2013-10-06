@@ -11,6 +11,9 @@ typedef enum CsAsmState {
   CS_ASM_STATE_COMMENT,
   CS_ASM_STATE_PSEUDO,
   CS_ASM_STATE_OP,
+  CS_ASM_STATE_CONST,
+  CS_ASM_STATE_STRING,
+  CS_ASM_STATE_NUM,
 } CsAsmState;
 
 typedef struct CsAssembler {
@@ -26,6 +29,7 @@ typedef struct CsAssembler {
 typedef enum CsPseudoOp {
   CS_PSEUDO_ENTRY,
   CS_PSEUDO_CONST,
+  CS_PSEUDO_END,
 } CsPseudoOp;
 
 CsAssembler* cs_assembler_new();
