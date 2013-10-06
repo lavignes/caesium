@@ -39,13 +39,12 @@
 #endif
 
 typedef enum CsReason {
-
   CS_REASON_NONE,
   CS_REASON_NOMEM,
   CS_REASON_BADFILE,
   CS_REASON_THRDFATAL,
   CS_REASON_UNIMPLEMENTED,
-
+  CS_REASON_ASSEMBLY_MALFORMED,
 } CsReason;
 
 extern const char* CS_REASONS[];

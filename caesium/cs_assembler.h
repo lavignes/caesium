@@ -3,9 +3,11 @@
 
 #include "cs_bytecode.h"
 #include "cs_list.h"
+#include "cs_hash.h"
 
 typedef enum CsAsmState {
   CS_ASM_STATE_INIT,     // initial parser state
+  CS_ASM_STATE_BLOCK,
   CS_ASM_STATE_COMMENT,
   CS_ASM_STATE_PSEUDO,
   CS_ASM_STATE_OP,
@@ -22,7 +24,7 @@ typedef struct CsAssembler {
 } CsAssembler;
 
 typedef enum CsPseudoOp {
-  CS_PSEUDO_MAIN,
+  CS_PSEUDO_ENTRY,
   CS_PSEUDO_CONST,
 } CsPseudoOp;
 

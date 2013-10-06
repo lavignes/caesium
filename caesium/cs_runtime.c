@@ -3,11 +3,14 @@
 #include "cs_lexer.h"
 #include "cs_assembler.h"
 
+extern void setup_assembler();
+
 CsRuntime* cs_runtime_new() {
   CsRuntime* cs = cs_alloc_object(CsRuntime);
   if (cs == NULL)
     cs_exit(CS_REASON_NOMEM);
   cs->mutators = cs_list_new();
+  setup_assembler();
   return cs;
 }
 
