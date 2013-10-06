@@ -4,10 +4,10 @@
 #include <stdbool.h>
 
 typedef struct CsPair {
-  uint32_t hash;
   char* u8key;
-  size_t key_len;
   void* value;
+  size_t key_len;
+  uint32_t hash;
 } CsPair;
 
 typedef struct CsHash {
