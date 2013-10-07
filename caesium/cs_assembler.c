@@ -68,6 +68,7 @@ CsByteChunk* cs_assembler_assemble(
   size_t len, line = 1, col = 1;
   CsPair* pair;
   CsPseudoOp pop;
+  CsOpcode op;
   CsList* stack = cs_list_new();
   cs_list_push_back(stack, (void*) CS_ASM_STATE_INIT);
 
@@ -134,6 +135,10 @@ CsByteChunk* cs_assembler_assemble(
                 cs_debug("READK: %s\n", buffer);
                 break;
 
+                case CS_ASM_STATE_MOVE ... CS_ASM_STATE_RETURN:
+                  cs_debug("ARGS: %s\n", buffer);
+                  break;
+
               default:
                 cs_error("%zu:%zu: unexpected argument list...\n", line, col);
                 cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
@@ -147,6 +152,10 @@ CsByteChunk* cs_assembler_assemble(
 
           case CS_ASM_STATE_PSEUDO:
             goto pseudo_break;
+            break;
+
+          case CS_ASM_STATE_OP:
+            goto op_break;
             break;
 
           default:
@@ -218,6 +227,37 @@ CsByteChunk* cs_assembler_assemble(
             cs_free_object(buffer);
             break;
 
+          case CS_ASM_STATE_OP:
+            op_break: cs_list_pop_back(stack);
+            end = cs_utf8_pointer_to_offset(u8str, c);
+            buffer = cs_utf8_substr(u8str, start, end);
+            if (buffer == NULL)
+              cs_exit(CS_REASON_NOMEM);
+            len = strlen(buffer);
+            if ((pair = cs_hash_find(assembler_ops, buffer, len))) {
+              op = (uintptr_t) pair->value;
+              switch (op) {
+
+                // THIS MIGHT WORK!!! :0
+                case CS_OPCODE_MOVE ... CS_OPCODE_RETURN:
+                  cs_list_push_back(stack, (void*) CS_ASM_STATE_MOVE + op);
+                  cs_list_push_back(stack, (void*) CS_ASM_STATE_ARGS);
+                  break;
+
+                default:
+                  cs_error("Um... this isn't right. %zu:%zu: '%s' \n",
+                    line, col, buffer);
+                  cs_exit(CS_REASON_UNIMPLEMENTED);
+                  break;
+              }
+            } else {
+              cs_error("%zu:%zu: '%s' is not an operation!\n",
+                line, col, buffer);
+              cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
+            }
+            cs_free_object(buffer);
+            break;
+
           default:
             break;
         }
@@ -270,7 +310,23 @@ CsByteChunk* cs_assembler_assemble(
             start = cs_utf8_pointer_to_offset(u8str, c);
             break;
 
+          case CS_ASM_STATE_COMMENT:
+          case CS_ASM_STATE_CONSTN:
+          case CS_ASM_STATE_CONSTS:
+          case CS_ASM_STATE_ARGS_READ:
+          case CS_ASM_STATE_OP:
+          case CS_ASM_STATE_PSEUDO:
+            break;
+
+          // This should be an operation
+          case CS_ASM_STATE_BLOCK:
+            cs_list_push_back(stack, (void*) CS_ASM_STATE_OP);
+            start = cs_utf8_pointer_to_offset(u8str, c);
+            break;
+
           default:
+            cs_error("%zu:%zu: unexpected symbol...\n", line, col);
+            cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
             break;
         }
         break;
