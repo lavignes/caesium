@@ -13,11 +13,14 @@ CsArray* cs_array_new();
 
 void cs_array_free(CsArray* arr);
 
+/**
+ * Retreive element in array
+ * @param  arr  an array
+ * @param  pos  a index in the array. The index can be negative.
+ * @param  data output location of data
+ * @return      true if pos is valid, false if illegal access
+ */
 bool cs_array_find(CsArray* arr, long pos, void* data);
-
-void cs_array_append(CsArray* arr, void* data);
-
-void cs_array_prepend(CsArray* arr, void* data);
 
 bool cs_array_insert(CsArray* arr, long pos, void* data);
 

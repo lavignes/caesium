@@ -1,6 +1,8 @@
 #ifndef _CS_BYTECODE_H
 #define _CS_BYTECODE_H
 
+#include "cs_array.h"
+
 typedef enum CsOpcode {
   CS_OPCODE_MOVE,    // move  A B   -> R[A] = R[B]
   CS_OPCODE_LOADK,   // loadk A B   -> R[A] = K[B]
@@ -93,37 +95,36 @@ typedef struct CsByteConst {
     struct {
       size_t length;
       char* string;
-    }
+    };
     uint32_t integer;
     double real;
     bool boolean;
-  }
+  }; // <3
 } CsByteConst;
 
 /**
  * a bytecode function
  */
+
 typedef struct CsByteFunction {
   size_t nparams;
-  size_t nfuncs;
   size_t nupvals;
-  size_t ncodes;
-  size_t nconsts;
   size_t nstacks;
-  struct CsByteFunction* funcs;
-  CsByteCode* codes;
-  CsByteConst* consts;
+  CsArray* funcs;
+  CsArray* codes;
+  CsArray* consts;
 } CsByteFunction;
 
 /**
  * a bytecode chunk
  */
 typedef struct CsByteChunk {
-
-  CsByteFunction entry;
-
+  size_t size;
+  CsByteFunction* entry;
 } CsByteChunk;
 
 const char* cs_bytechunk_serialize(CsByteChunk* chunk);
+
+CsByteChunk* cs_bytechunk_deserialize(const char* data, size_t size);
 
 #endif /* _CS_BYTECODE_H */
