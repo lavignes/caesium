@@ -35,8 +35,8 @@ void cs_list_push_back(CsList* list, void* data) {
     cs_exit(CS_REASON_NOMEM);
   node->data = data;
   node->next = NULL;
+  node->prev = list->tail;
   if (list->tail != NULL) {
-    node->prev = list->tail;
     list->tail->next = node;
   }
   if(list->head == NULL)
