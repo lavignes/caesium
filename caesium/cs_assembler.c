@@ -43,7 +43,8 @@ void setup_assembler() {
   cs_hash_insert(assembler_ops, "clos", 4, (void*) CS_OPCODE_CLOS);
   cs_hash_insert(assembler_ops, "cpyup", 5, (void*) CS_OPCODE_CPYUP);
   cs_hash_insert(assembler_ops, "movup", 5, (void*) CS_OPCODE_MOVUP);
-  cs_hash_insert(assembler_ops, "return", 6, (void*) CS_OPCODE_RETURN);
+  cs_hash_insert(assembler_ops, "call", 4, (void*) CS_OPCODE_CALL);
+  cs_hash_insert(assembler_ops, "ret", 3, (void*) CS_OPCODE_RET);
 }
 
 void shutdown_assembler() {
@@ -133,16 +134,14 @@ CsByteChunk* cs_assembler_assemble(
 
               case CS_ASM_STATE_CONSTN:
                 sscanf(buffer, "%lf", &karg);
-                cs_debug("READK: %lf\n", karg);
                 break;
 
               case CS_ASM_STATE_CONSTS:
-                cs_debug("READK: %s\n", buffer);
                 break;
 
-                case CS_ASM_STATE_MOVE ... CS_ASM_STATE_RETURN:
-                  cs_debug("ARGS: %s\n", buffer);
-                  break;
+              case CS_ASM_STATE_MOVE ... CS_ASM_STATE_RET:
+                cs_debug("ARGS: %s\n", buffer);
+                break;
 
               default:
                 cs_error("%zu:%zu: unexpected argument list...\n", line, col);
@@ -244,7 +243,7 @@ CsByteChunk* cs_assembler_assemble(
               switch (op) {
 
                 // THIS MIGHT WORK!!! :0
-                case CS_OPCODE_MOVE ... CS_OPCODE_RETURN:
+                case CS_OPCODE_MOVE ... CS_OPCODE_RET:
                   cs_list_push_back(stack, (void*) CS_ASM_STATE_MOVE + op);
                   cs_list_push_back(stack, (void*) CS_ASM_STATE_ARGS);
                   break;
