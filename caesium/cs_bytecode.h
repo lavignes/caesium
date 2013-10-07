@@ -52,14 +52,14 @@ typedef uint32_t CsByteCode;
 #define cs_bytecode_set_opcode(bytecode, opcode) \
   ((bytecode & ~CS_BYTECODE_OPCODE_MASK) | opcode)
 
-#define cs_bytecode_set_a(bytecode, rd) \
-  ((bytecode & ~CS_BYTECODE_A_MASK) | (rd << 6))
+#define cs_bytecode_set_a(bytecode, a) \
+  ((bytecode & ~CS_BYTECODE_A_MASK) | (a << 6))
 
-#define cs_bytecode_set_c(bytecode, rt) \
-  ((bytecode & ~CS_BYTECODE_C_MASK) | (rt << 14))
+#define cs_bytecode_set_c(bytecode, c) \
+  ((bytecode & ~CS_BYTECODE_C_MASK) | (c << 14))
 
-#define cs_bytecode_set_b(bytecode, rs) \
-  ((bytecode & ~CS_BYTECODE_B_MASK) | (rd << 23))
+#define cs_bytecode_set_b(bytecode, b) \
+  ((bytecode & ~CS_BYTECODE_B_MASK) | (b << 23))
 
 #define cs_bytecode_set_imm(bytecode, imm) \
   ((bytecode & ~CS_BYTECODE_IMM_MASK) | (imm << 14))
