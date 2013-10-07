@@ -10,19 +10,14 @@ typedef enum CsAsmState {
   CS_ASM_STATE_BLOCK,
   CS_ASM_STATE_COMMENT,
   CS_ASM_STATE_PSEUDO,
-  CS_ASM_STATE_OP,
-  CS_ASM_STATE_CONST,
-  CS_ASM_STATE_STRING,
-  CS_ASM_STATE_NUM,
+  CS_ASM_STATE_ENTRY,
+  CS_ASM_STATE_CONSTN,   // Const number
+  CS_ASM_STATE_CONSTS,   // Const string
+  CS_ASM_STATE_ARGS,
+  CS_ASM_STATE_ARGS_READ,
 } CsAsmState;
 
 typedef struct CsAssembler {
-  size_t offset; // offset in characters
-  size_t line;
-  size_t col;
-  const char* file;
-  const char* pos;
-  CsList* statestack;
 } CsAssembler;
 
 typedef enum CsPseudoOp {

@@ -2,27 +2,29 @@
 #define _CS_BYTECODE_H
 
 typedef enum CsOpcode {
-  CS_OPCODE_MOVE,
-  CS_OPCODE_LOADK,
-  CS_OPCODE_LOADG,
-  CS_OPCODE_STORG,
-  CS_OPCODE_ADD,
-  CS_OPCODE_SUB,
-  CS_OPCODE_MUL,
-  CS_OPCODE_DIV,
-  CS_OPCODE_MOD,
-  CS_OPCODE_POW,
-  CS_OPCODE_NEG,
-  CS_OPCODE_AND,
-  CS_OPCODE_OR,
-  CS_OPCODE_XOR,
-  CS_OPCODE_NOT,
-  CS_OPCODE_SHL,
-  CS_OPCODE_SHR,
-  CS_OPCODE_JMP,
-  CS_OPCODE_EQ,
-  CS_OPCODE_LT,
-  CS_OPCODE_LE,
+  CS_OPCODE_MOVE,    // move  A B   -> R[A] = R[B]
+  CS_OPCODE_LOADK,   // loadk A B   -> R[A] = K[B]
+  CS_OPCODE_LOADG,   // loadg A B   -> R[A] = G[K[B]]
+  CS_OPCODE_STORG,   // storg A B   -> G[K[B]] = R[A]
+  CS_OPCODE_LOADI,   // loadi A B C -> R[A] = R[B][RK[C]]
+  CS_OPCODE_STORI,   // stori A B C -> R[B][RK[C]] = R[A]
+  CS_OPCODE_ADD,     // add A B C   -> R[A] = RK[B] + RK[C]
+  CS_OPCODE_SUB,     // sub A B C   -> R[A] = RK[B] - RK[C]
+  CS_OPCODE_MUL,     // sub A B C   -> R[A] = RK[B] * RK[C]
+  CS_OPCODE_DIV,     // div A B C   -> R[A] = RK[B] / RK[C]
+  CS_OPCODE_MOD,     // mod A B C   -> R[A] = RK[B] % RK[C]
+  CS_OPCODE_POW,     // pow A B C   -> R[A] = RK[B] ** RK[C]
+  CS_OPCODE_NEG,     // neg A B     -> R[A] = - RK[B]
+  CS_OPCODE_AND,     // and A B C   -> R[A] = RK[B] & RK[C]
+  CS_OPCODE_OR,      // or  A B C   -> R[A] = RK[B] | RK[C]
+  CS_OPCODE_XOR,     // xor A B C   -> R[A] = RK[B] ^ RK[C]
+  CS_OPCODE_NOT,     // not A B     -> R[A] = ~ RK[B]
+  CS_OPCODE_SHL,     // shl A B C   -> R[A] = RK[B] << RK[C]
+  CS_OPCODE_SHR,     // shr A B C   -> R[A] = RK[B] >> RK[C]
+  CS_OPCODE_JMP,     // jmp sIMM    -> PC += sIMM
+  CS_OPCODE_LT,      // lt  A B C   -> R[A] = RK[B] <  RK[C]
+  CS_OPCODE_LE,      // le  A B C   -> R[A] = RK[B] <= RK[C]
+  CS_OPCODE_EQ,      // eq  A B C   -> R[A] = RK[B] == RK[C]
   CS_OPCODE_RETURN,
 } CsOpcode;
 
@@ -35,9 +37,9 @@ typedef enum CsOpcode {
 /**
  * a bytecode instruction
  * format:
- *   32[  b:9 c:9  a:8 opcode:6 ]0
- *   32[   imm:18  a:8 opcode:6 ]0
- *   32[  simm:18  a:8 opcode:6 ]0
+ *   32[  B:9 C:9  A:8 opcode:6 ]0
+ *   32[   IMM:18  A:8 opcode:6 ]0
+ *   32[  sIMM:18  A:8 opcode:6 ]0
  */
 typedef uint32_t CsByteCode;
 
