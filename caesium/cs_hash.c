@@ -24,7 +24,8 @@ void hash_double(CsHash* hash) {
     if (pair != NULL && pair != DUMMY) {
       pos = pair->hash % hash->size;
       while (hash->buckets[pos] != NULL) {
-        pos = (pos == hash->size)? 0 : pos + 1;
+        pos++;
+        if (pos == hash->size) pos = 0;
       }
       hash->buckets[pos] = pair;
     }
@@ -63,7 +64,8 @@ CsPair* cs_hash_insert(
       pair->value = value;
       return pair;
     }
-    i = (i == hash->size)? 0 : i + 1;
+    i++;
+    if (i == hash->size) i = 0;
     pair = hash->buckets[i];
   }
   pair = cs_alloc_object(CsPair);
@@ -94,7 +96,8 @@ CsPair* cs_hash_remove(CsHash* hash, const char* key, size_t key_len) {
       hash->buckets[i] = (void*) DUMMY;
       return pair;
     }
-    i = (i == hash->size)? 0 : i + 1;
+    i++;
+    if (i == hash->size) i = 0;
     pair = hash->buckets[i];
   }
   return NULL;
@@ -109,7 +112,8 @@ CsPair* cs_hash_find(CsHash* hash, const char* key, size_t key_len) {
       && strncmp(key, pair->u8key, pair->key_len) == 0) {
       return pair;
     }
-    i = (i == hash->size)? 0 : i + 1;
+    i++;
+    if (i == hash->size) i = 0;
     pair = hash->buckets[i];
   }
   return NULL;
