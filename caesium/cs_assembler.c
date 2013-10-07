@@ -2,6 +2,7 @@
 #include "cs_assembler.h"
 #include "cs_unicode.h"
 #include "cs_hash.h"
+#include "cs_array.h"
 
 static CsHash* assembler_pseudo_ops = NULL;
 static CsHash* assembler_ops = NULL;
@@ -65,7 +66,7 @@ CsByteChunk* cs_assembler_assemble(
   const char* u8str,
   size_t size)
 {
-  int arg0, arg1, arg2, arg3, arg4;
+  int arg0, arg1, arg2;
   double karg;
   long start, end;
   char* buffer;
@@ -76,7 +77,10 @@ CsByteChunk* cs_assembler_assemble(
   CsPair* pair;
   CsPseudoOp pop;
   CsOpcode op;
+  CsByteFunction *func, *cur_func;
+  CsByteConst* konst;
   CsList* stack = cs_list_new();
+  CsList* fstack = cs_list_new(); // stack of in-progress function blocks
   cs_list_push_back(stack, (void*) CS_ASM_STATE_INIT);
 
   if (size == 0) {
@@ -120,25 +124,53 @@ CsByteChunk* cs_assembler_assemble(
             switch (state) {
               case CS_ASM_STATE_ENTRY:
               case CS_ASM_STATE_FUNC:
-                if (sscanf(buffer, "%d %d %d %d %d",
-                  &arg0, &arg1, &arg2, &arg3, &arg4) != 5) {
+                if (sscanf(buffer, "%d %d %d", &arg0, &arg1, &arg2) != 3) {
                   cs_error("%zu:%zu: wrong number of operands pseudo op\n",
                     line, col);
                   cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
                 }
-                cs_debug("FUNCS: %d\n"
+                cs_debug("PARAMS: %d\n"
                          "UPVALS: %d\n"
-                         "LOCALS: %d\n"
-                         "CONSTS: %d\n"
                          "STACKS: %d\n",
-                         arg0, arg1, arg2, arg3, arg4);
+                         arg0, arg1, arg2);
+                func = cs_alloc_object(CsByteFunction);
+                if (func == NULL)
+                  cs_exit(CS_REASON_NOMEM);
+                func->nparams = arg0;
+                func->nupvals = arg1;
+                func->nstacks = arg2;
+                func->funcs = cs_array_new();
+                func->codes = cs_array_new();
+                func->consts = cs_array_new();
+                cs_list_push_back(fstack, func);
                 break;
 
               case CS_ASM_STATE_CONSTN:
                 sscanf(buffer, "%lf", &karg);
+                konst = cs_alloc_object(CsByteConst);
+                if (konst == NULL)
+                  cs_exit(CS_REASON_NOMEM);
+                konst->type = CS_CONST_TYPE_REAL;
+                konst->real = karg;
+
+                // append const to consts list
+                cur_func = cs_list_peek_back(fstack);
+                cs_array_insert(cur_func->consts, -1, konst);
                 break;
 
               case CS_ASM_STATE_CONSTS:
+                konst = cs_alloc_object(CsByteConst);
+                if (konst == NULL)
+                  cs_exit(CS_REASON_NOMEM);
+                konst->type = CS_CONST_TYPE_STRING;
+                // intercept the buffer
+                konst->string = buffer;
+                konst->size = strlen(buffer);
+                buffer = NULL; // this prevents freeing the buffer
+
+                // append const to consts list
+                cur_func = cs_list_peek_back(fstack);
+                cs_array_insert(cur_func->consts, -1, konst);
                 break;
 
               case CS_ASM_STATE_MOVE ... CS_ASM_STATE_RET:
@@ -211,6 +243,16 @@ CsByteChunk* cs_assembler_assemble(
                   }
                   // pop the block state off the stack
                   cs_list_pop_back(stack);
+                  // get the func, and append
+                  func = cs_list_pop_back(fstack);
+                  // unless... this is the entry function
+                  if (fstack->length == 0) {
+                    // make sure to free the buffer :l
+                    cs_free_object(buffer);
+                    goto return_entry;
+                  }
+                  cur_func = cs_list_peek_back(fstack);
+                  cs_array_insert(cur_func->funcs, -1, func);
                   break;
 
                 case CS_PSEUDO_CONST:
@@ -292,6 +334,9 @@ CsByteChunk* cs_assembler_assemble(
 
       case '=':
         switch (state) {
+          case CS_ASM_STATE_COMMENT:
+            break;
+            
           case CS_ASM_STATE_BLOCK:
             cs_list_push_back(stack, (void*) CS_ASM_STATE_LABEL);
             start = cs_utf8_pointer_to_offset(u8str, c);
@@ -376,8 +421,18 @@ CsByteChunk* cs_assembler_assemble(
     col++;
   } while ((c = cs_utf8_next(c, u8str + size)));
 
-  cs_list_free(stack);
-  return NULL;
+  // This location is impossible!
+  cs_error("Assembly has no entry point!\n");
+  cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
+
+  return_entry: cs_list_free(stack);
+  cs_list_free(fstack);
+
+  CsByteChunk* chunk = cs_alloc_object(CsByteChunk);
+  if (chunk == NULL)
+    cs_exit(CS_REASON_NOMEM);
+  chunk->entry = func;
+  return chunk;
 }
 
 void cs_assembler_free(CsAssembler* assembler) {

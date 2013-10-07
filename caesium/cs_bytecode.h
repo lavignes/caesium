@@ -93,7 +93,7 @@ typedef struct CsByteConst {
   CsByteConstType type;
   union {
     struct {
-      size_t length;
+      size_t size;
       char* string;
     };
     uint32_t integer;
@@ -105,7 +105,6 @@ typedef struct CsByteConst {
 /**
  * a bytecode function
  */
-
 typedef struct CsByteFunction {
   size_t nparams;
   size_t nupvals;
@@ -126,5 +125,9 @@ typedef struct CsByteChunk {
 const char* cs_bytechunk_serialize(CsByteChunk* chunk);
 
 CsByteChunk* cs_bytechunk_deserialize(const char* data, size_t size);
+
+void cs_bytechunk_free(CsByteChunk* chunk);
+
+void cs_bytefunction_free(CsByteFunction* func);
 
 #endif /* _CS_BYTECODE_H */

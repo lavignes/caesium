@@ -70,7 +70,8 @@ static int entry(CsMutator* mut, void* data) {
   CsByteChunk* chunk =
     cs_assembler_assemble(assembler, edata->u8str, edata->size);
   cs_assembler_free(assembler);
-  (void) chunk;
+  /* free the chunk for now */
+  cs_bytechunk_free(chunk);
   return 0;
 }
 
