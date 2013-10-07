@@ -20,6 +20,8 @@ void setup_assembler() {
   cs_hash_insert(assembler_ops, "storg", 5, (void*) CS_OPCODE_STORG);
   cs_hash_insert(assembler_ops, "loadi", 5, (void*) CS_OPCODE_LOADI);
   cs_hash_insert(assembler_ops, "stori", 5, (void*) CS_OPCODE_STORI);
+  cs_hash_insert(assembler_ops, "lodup", 5, (void*) CS_OPCODE_LODUP);
+  cs_hash_insert(assembler_ops, "strup", 5, (void*) CS_OPCODE_STRUP);
   cs_hash_insert(assembler_ops, "add", 3, (void*) CS_OPCODE_ADD);
   cs_hash_insert(assembler_ops, "sub", 3, (void*) CS_OPCODE_SUB);
   cs_hash_insert(assembler_ops, "mul", 3, (void*) CS_OPCODE_MUL);
@@ -38,6 +40,9 @@ void setup_assembler() {
   cs_hash_insert(assembler_ops, "lt", 2, (void*) CS_OPCODE_LT);
   cs_hash_insert(assembler_ops, "le", 2, (void*) CS_OPCODE_LE);
   cs_hash_insert(assembler_ops, "eq", 2, (void*) CS_OPCODE_EQ);
+  cs_hash_insert(assembler_ops, "clos", 4, (void*) CS_OPCODE_CLOS);
+  cs_hash_insert(assembler_ops, "cpyup", 5, (void*) CS_OPCODE_CPYUP);
+  cs_hash_insert(assembler_ops, "movup", 5, (void*) CS_OPCODE_MOVUP);
   cs_hash_insert(assembler_ops, "return", 6, (void*) CS_OPCODE_RETURN);
 }
 
@@ -58,7 +63,7 @@ CsByteChunk* cs_assembler_assemble(
   const char* u8str,
   size_t size)
 {
-  uint8_t arg0, arg1, arg2, arg3, arg4;
+  int arg0, arg1, arg2, arg3, arg4;
   double karg;
   long start, end;
   char* buffer;
@@ -112,17 +117,17 @@ CsByteChunk* cs_assembler_assemble(
               cs_exit(CS_REASON_NOMEM);
             switch (state) {
               case CS_ASM_STATE_ENTRY:
-                if (sscanf(buffer, "%"SCNu8" %"SCNu8" %"SCNu8" %"SCNu8" %"SCNu8,
+                if (sscanf(buffer, "%d %d %d %d %d",
                   &arg0, &arg1, &arg2, &arg3, &arg4) != 5) {
                   cs_error("%zu:%zu: wrong number of operands for .entry\n",
                     line, col);
                   cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
                 }
-                cs_debug("FUNCS: %" PRIu8 "\n"
-                         "UPVALS: %" PRIu8 "\n"
-                         "LOCALS: %" PRIu8 "\n"
-                         "CONSTS: %" PRIu8 "\n"
-                         "STACKS: %" PRIu8 "\n",
+                cs_debug("FUNCS: %d\n"
+                         "UPVALS: %d\n"
+                         "LOCALS: %d\n"
+                         "CONSTS: %d\n"
+                         "STACKS: %d\n",
                          arg0, arg1, arg2, arg3, arg4);
                 break;
 

@@ -8,6 +8,8 @@ typedef enum CsOpcode {
   CS_OPCODE_STORG,   // storg A B   -> G[K[B]] = R[A]
   CS_OPCODE_LOADI,   // loadi A B C -> R[A] = R[B][RK[C]]
   CS_OPCODE_STORI,   // stori A B C -> R[B][RK[C]] = R[A]
+  CS_OPCODE_LODUP,   // lodup A B   -> R[A] = U[B]
+  CS_OPCODE_STRUP,   // strup A B   -> U[B] = R[A]
   CS_OPCODE_ADD,     // add A B C   -> R[A] = RK[B] + RK[C]
   CS_OPCODE_SUB,     // sub A B C   -> R[A] = RK[B] - RK[C]
   CS_OPCODE_MUL,     // sub A B C   -> R[A] = RK[B] * RK[C]
@@ -25,6 +27,9 @@ typedef enum CsOpcode {
   CS_OPCODE_LT,      // lt  A B C   -> R[A] = RK[B] <  RK[C]
   CS_OPCODE_LE,      // le  A B C   -> R[A] = RK[B] <= RK[C]
   CS_OPCODE_EQ,      // eq  A B C   -> R[A] = RK[B] == RK[C]
+  CS_OPCODE_CLOS,    // clos A IMM  -> R[A] = new F[IMM]
+  CS_OPCODE_CPYUP,   // cpyup A B C -> R[A].UP[B] = R[C]
+  CS_OPCODE_MOVUP,   // movup A B C -> R[A].UP[B] = UP[C]
   CS_OPCODE_RETURN,
 } CsOpcode;
 
@@ -63,6 +68,10 @@ typedef uint32_t CsByteCode;
 
 #define cs_bytecode_set_imm(bytecode, imm) \
   ((bytecode & ~CS_BYTECODE_IMM_MASK) | (imm << 14))
+
+#define CS_NSTACKS_MAX 250
+#define CS_NLOCALS_MAX 200
+#define CS_NUPVALS_MAX 60
 
 typedef enum CsByteConstType {
   CS_CONST_TYPE_NIL,
