@@ -89,19 +89,29 @@ typedef enum CsByteConstType {
  */
 typedef struct CsByteConst {
   CsByteConstType type;
-  void* k;
+  union {
+    struct {
+      size_t length;
+      char* string;
+    }
+    uint32_t integer;
+    double real;
+    bool boolean;
+  }
 } CsByteConst;
 
 /**
  * a bytecode function
  */
 typedef struct CsByteFunction {
-  size_t nupvals;
   size_t nparams;
-  size_t nstacks;
+  size_t nfuncs;
+  size_t nupvals;
   size_t ncodes;
-  CsByteCode* codes;
   size_t nconsts;
+  size_t nstacks;
+  struct CsByteFunction* funcs;
+  CsByteCode* codes;
   CsByteConst* consts;
 } CsByteFunction;
 
@@ -113,5 +123,7 @@ typedef struct CsByteChunk {
   CsByteFunction entry;
 
 } CsByteChunk;
+
+const char* cs_bytechunk_serialize(CsByteChunk* chunk);
 
 #endif /* _CS_BYTECODE_H */
