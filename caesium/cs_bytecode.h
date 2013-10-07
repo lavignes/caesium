@@ -10,6 +10,7 @@ typedef enum CsOpcode {
   CS_OPCODE_STORI,   // stori A B C -> R[B][RK[C]] = R[A]
   CS_OPCODE_LODUP,   // lodup A B   -> R[A] = U[B]
   CS_OPCODE_STRUP,   // strup A B   -> U[B] = R[A]
+  CS_OPCODE_NEW,     // new A B     -> R[A] = new R[B]
   CS_OPCODE_ADD,     // add A B C   -> R[A] = RK[B] + RK[C]
   CS_OPCODE_SUB,     // sub A B C   -> R[A] = RK[B] - RK[C]
   CS_OPCODE_MUL,     // sub A B C   -> R[A] = RK[B] * RK[C]
@@ -24,6 +25,7 @@ typedef enum CsOpcode {
   CS_OPCODE_SHL,     // shl A B C   -> R[A] = RK[B] << RK[C]
   CS_OPCODE_SHR,     // shr A B C   -> R[A] = RK[B] >> RK[C]
   CS_OPCODE_JMP,     // jmp sIMM    -> PC += sIMM
+  CS_OPCODE_IF,      // if  A sIMM  -> if R[A] then PC++ else PC += sIMM
   CS_OPCODE_LT,      // lt  A B C   -> R[A] = RK[B] <  RK[C]
   CS_OPCODE_LE,      // le  A B C   -> R[A] = RK[B] <= RK[C]
   CS_OPCODE_EQ,      // eq  A B C   -> R[A] = RK[B] == RK[C]

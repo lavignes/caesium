@@ -290,6 +290,30 @@ CsByteChunk* cs_assembler_assemble(
         }
         break;
 
+      case '=':
+        switch (state) {
+          case CS_ASM_STATE_BLOCK:
+            cs_list_push_back(stack, (void*) CS_ASM_STATE_LABEL);
+            start = cs_utf8_pointer_to_offset(u8str, c);
+            break;
+
+          case CS_ASM_STATE_LABEL:
+            cs_list_pop_back(stack);
+            end = cs_utf8_pointer_to_offset(u8str, c);
+            buffer = cs_utf8_substr(u8str, start + 1, end);
+            if (buffer == NULL)
+              cs_exit(CS_REASON_NOMEM);
+            cs_debug("label: %s\n", buffer);
+            cs_free_object(buffer);
+            break;
+
+          default:
+            cs_error("%zu:%zu: label unexpected...\n", line, col);
+            cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
+            break;
+        }
+        break;
+
       case '\'':
         switch (state) {
           case CS_ASM_STATE_ARGS_READ:
@@ -328,6 +352,7 @@ CsByteChunk* cs_assembler_assemble(
           case CS_ASM_STATE_ARGS_READ:
           case CS_ASM_STATE_OP:
           case CS_ASM_STATE_PSEUDO:
+          case CS_ASM_STATE_LABEL:
             break;
 
           // This should be an operation
