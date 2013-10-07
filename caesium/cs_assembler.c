@@ -11,6 +11,7 @@ void setup_assembler() {
   assembler_ops = cs_hash_new();
 
   cs_hash_insert(assembler_pseudo_ops, "entry", 5, (void*) CS_PSEUDO_ENTRY);
+  cs_hash_insert(assembler_pseudo_ops, "func", 4, (void*) CS_PSEUDO_FUNC);
   cs_hash_insert(assembler_pseudo_ops, "const", 5, (void*) CS_PSEUDO_CONST);
   cs_hash_insert(assembler_pseudo_ops, "end", 3, (void*) CS_PSEUDO_END);
 
@@ -118,9 +119,10 @@ CsByteChunk* cs_assembler_assemble(
               cs_exit(CS_REASON_NOMEM);
             switch (state) {
               case CS_ASM_STATE_ENTRY:
+              case CS_ASM_STATE_FUNC:
                 if (sscanf(buffer, "%d %d %d %d %d",
                   &arg0, &arg1, &arg2, &arg3, &arg4) != 5) {
-                  cs_error("%zu:%zu: wrong number of operands for .entry\n",
+                  cs_error("%zu:%zu: wrong number of operands pseudo op\n",
                     line, col);
                   cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
                 }
@@ -191,6 +193,12 @@ CsByteChunk* cs_assembler_assemble(
                   // push next expected states onto stack
                   cs_list_push_back(stack, (void*) CS_ASM_STATE_BLOCK);
                   cs_list_push_back(stack, (void*) CS_ASM_STATE_ENTRY);
+                  cs_list_push_back(stack, (void*) CS_ASM_STATE_ARGS);
+                  break;
+
+                case CS_PSEUDO_FUNC:
+                  cs_list_push_back(stack, (void*) CS_ASM_STATE_BLOCK);
+                  cs_list_push_back(stack, (void*) CS_ASM_STATE_FUNC);
                   cs_list_push_back(stack, (void*) CS_ASM_STATE_ARGS);
                   break;
 

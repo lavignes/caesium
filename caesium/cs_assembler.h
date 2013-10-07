@@ -12,6 +12,7 @@ typedef enum CsAsmState {
   CS_ASM_STATE_PSEUDO,
   CS_ASM_STATE_OP,
   CS_ASM_STATE_ENTRY,
+  CS_ASM_STATE_FUNC,
   CS_ASM_STATE_CONSTN,   // Const number
   CS_ASM_STATE_CONSTS,   // Const string
   CS_ASM_STATE_ARGS,
@@ -55,6 +56,7 @@ typedef struct CsAssembler {
 
 typedef enum CsPseudoOp {
   CS_PSEUDO_ENTRY,
+  CS_PSEUDO_FUNC,
   CS_PSEUDO_CONST,
   CS_PSEUDO_END,
 } CsPseudoOp;
