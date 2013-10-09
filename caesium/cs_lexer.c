@@ -2,7 +2,7 @@
 
 CsLexer* cs_lexer_new() {
   CsLexer* lex = cs_alloc_object(CsLexer);
-  if (lex == NULL)
+  if (cs_unlikely(lex == NULL))
     cs_exit(CS_REASON_NOMEM);
   return lex;
 }

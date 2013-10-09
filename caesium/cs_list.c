@@ -10,7 +10,7 @@ typedef struct CsListNode {
 
 CsList* cs_list_new() {
   CsList* list = cs_alloc_object(CsList);
-  if (list == NULL)
+  if (cs_unlikely(list == NULL))
     cs_exit(CS_REASON_NOMEM);
   list->length = 0;
   list->head = list->tail = NULL;
@@ -31,7 +31,7 @@ void cs_list_free(CsList* list) {
 void cs_list_push_back(CsList* list, void* data) {
   list->length++;
   CsListNode* node = cs_alloc_object(CsListNode);
-  if (node == NULL)
+  if (cs_unlikely(node == NULL))
     cs_exit(CS_REASON_NOMEM);
   node->data = data;
   node->next = NULL;
@@ -64,7 +64,7 @@ void* cs_list_pop_back(CsList* list) {
 void cs_list_push_front(CsList* list, void* data) {
   list->length++;
   CsListNode* node = cs_alloc_object(CsListNode);
-  if (node == NULL)
+  if (cs_unlikely(node == NULL))
     cs_exit(CS_REASON_NOMEM);
   node->data = data;
   node->prev = NULL;

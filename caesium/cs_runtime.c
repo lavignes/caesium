@@ -8,7 +8,7 @@ extern void shutdown_assembler();
 
 CsRuntime* cs_runtime_new() {
   CsRuntime* cs = cs_alloc_object(CsRuntime);
-  if (cs == NULL)
+  if (cs_unlikely(cs == NULL))
     cs_exit(CS_REASON_NOMEM);
   cs->mutators = cs_list_new();
   setup_assembler();
@@ -38,7 +38,7 @@ void cs_runtime_dofile(CsRuntime* cs, const char* filename) {
   rewind(input_file);
   
   file_buffer = malloc(file_size * sizeof(char));
-  if (file_buffer == NULL)
+  if (cs_unlikely(file_buffer == NULL))
     cs_exit(CS_REASON_NOMEM);
   fread(file_buffer, file_size, 1, input_file);
   fclose(input_file);

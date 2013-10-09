@@ -56,7 +56,7 @@ void shutdown_assembler() {
 
 CsAssembler* cs_assembler_new() {
   CsAssembler* assembler = cs_alloc_object(CsAssembler);
-  if (assembler == NULL)
+  if (cs_unlikely(assembler == NULL))
     cs_exit(CS_REASON_NOMEM);
   return assembler;
 }
@@ -119,7 +119,7 @@ CsByteChunk* cs_assembler_assemble(
             consts_break: state = (uintptr_t) cs_list_pop_back(stack);
             end = cs_utf8_pointer_to_offset(u8str, c);
             buffer = cs_utf8_substr(u8str, start, end);
-            if (buffer == NULL)
+            if (cs_unlikely(buffer == NULL))
               cs_exit(CS_REASON_NOMEM);
             switch (state) {
               case CS_ASM_STATE_ENTRY:
@@ -134,7 +134,7 @@ CsByteChunk* cs_assembler_assemble(
                          "STACKS: %d\n",
                          arg0, arg1, arg2);
                 func = cs_alloc_object(CsByteFunction);
-                if (func == NULL)
+                if (cs_unlikely(func == NULL))
                   cs_exit(CS_REASON_NOMEM);
                 func->nparams = arg0;
                 func->nupvals = arg1;
@@ -148,7 +148,7 @@ CsByteChunk* cs_assembler_assemble(
               case CS_ASM_STATE_CONSTN:
                 sscanf(buffer, "%lf", &karg);
                 konst = cs_alloc_object(CsByteConst);
-                if (konst == NULL)
+                if (cs_unlikely(konst == NULL))
                   cs_exit(CS_REASON_NOMEM);
                 konst->type = CS_CONST_TYPE_REAL;
                 konst->real = karg;
@@ -160,7 +160,7 @@ CsByteChunk* cs_assembler_assemble(
 
               case CS_ASM_STATE_CONSTS:
                 konst = cs_alloc_object(CsByteConst);
-                if (konst == NULL)
+                if (cs_unlikely(konst == NULL))
                   cs_exit(CS_REASON_NOMEM);
                 konst->type = CS_CONST_TYPE_STRING;
                 // intercept the buffer
@@ -209,7 +209,7 @@ CsByteChunk* cs_assembler_assemble(
             pseudo_break: cs_list_pop_back(stack);
             end = cs_utf8_pointer_to_offset(u8str, c);
             buffer = cs_utf8_substr(u8str, start + 1, end);
-            if (buffer == NULL)
+            if (cs_unlikely(buffer == NULL))
               cs_exit(CS_REASON_NOMEM);
             len = strlen(buffer);
             if ((pair = cs_hash_find(assembler_pseudo_ops, buffer, len))) {
@@ -285,7 +285,7 @@ CsByteChunk* cs_assembler_assemble(
             op_break: cs_list_pop_back(stack);
             end = cs_utf8_pointer_to_offset(u8str, c);
             buffer = cs_utf8_substr(u8str, start, end);
-            if (buffer == NULL)
+            if (cs_unlikely(buffer == NULL))
               cs_exit(CS_REASON_NOMEM);
             len = strlen(buffer);
             if ((pair = cs_hash_find(assembler_ops, buffer, len))) {
@@ -346,7 +346,7 @@ CsByteChunk* cs_assembler_assemble(
             cs_list_pop_back(stack);
             end = cs_utf8_pointer_to_offset(u8str, c);
             buffer = cs_utf8_substr(u8str, start + 1, end);
-            if (buffer == NULL)
+            if (cs_unlikely(buffer == NULL))
               cs_exit(CS_REASON_NOMEM);
             cs_debug("label: %s\n", buffer);
             cs_free_object(buffer);
@@ -429,7 +429,7 @@ CsByteChunk* cs_assembler_assemble(
   cs_list_free(fstack);
 
   CsByteChunk* chunk = cs_alloc_object(CsByteChunk);
-  if (chunk == NULL)
+  if (cs_unlikely(chunk == NULL))
     cs_exit(CS_REASON_NOMEM);
   chunk->entry = func;
   return chunk;

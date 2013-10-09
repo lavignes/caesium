@@ -15,7 +15,7 @@ void hash_double(CsHash* hash) {
   hash->size *= 2;
   hash->high_load = (hash->size >> 2) * 3;
   hash->buckets = malloc(sizeof(CsPair*) * hash->size);
-  if (hash->buckets == NULL)
+  if (cs_unlikely(hash->buckets == NULL))
     cs_exit(CS_REASON_NOMEM);
   for (i = 0; i < hash->size; i++)
     hash->buckets[i] = NULL;
@@ -36,13 +36,13 @@ void hash_double(CsHash* hash) {
 CsHash* cs_hash_new() {
   size_t i;
   CsHash* hash = cs_alloc_object(CsHash);
-  if (hash == NULL)
+  if (cs_unlikely(hash == NULL))
     cs_exit(CS_REASON_NOMEM);
   hash->size = 8;
   hash->length = 0;
   hash->high_load = (hash->size >> 2) * 3;
   hash->buckets = malloc(sizeof(CsPair*) * hash->size);
-  if (hash->buckets == NULL)
+  if (cs_unlikely(hash->buckets == NULL))
     cs_exit(CS_REASON_NOMEM);
   for (i = 0; i < hash->size; i++)
     hash->buckets[i] = NULL;
@@ -69,10 +69,10 @@ CsPair* cs_hash_insert(
     pair = hash->buckets[i];
   }
   pair = cs_alloc_object(CsPair);
-  if (pair == NULL)
+  if (cs_unlikely(pair == NULL))
     cs_exit(CS_REASON_NOMEM);
   pair->u8key = malloc(key_len);
-  if (pair->u8key == NULL)
+  if (cs_unlikely(pair->u8key == NULL))
     cs_exit(CS_REASON_NOMEM);
   memcpy(pair->u8key, key, key_len);
   pair->key_len = key_len;

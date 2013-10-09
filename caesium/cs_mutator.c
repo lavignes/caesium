@@ -7,7 +7,7 @@ static int mut_main(void* data) {
 
 CsMutator* cs_mutator_new(CsRuntime* cs) {
   CsMutator* mut = cs_alloc_object(CsMutator);
-  if (mut == NULL)
+  if (cs_unlikely(mut == NULL))
     cs_exit(CS_REASON_NOMEM);
   mut->started = false;
   mut->cs = cs;
