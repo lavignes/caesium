@@ -26,6 +26,8 @@
   if (!(expression)) return return_value
 
 #define cs_assert(expr) assert(expr)
+#define cs_likely(expr)    __builtin_expect (!!(expr), true)
+#define cs_unlikely(expr)  __builtin_expect (!!(expr), false)
 
 #define cs_alloc_object(type) ((type *) malloc(sizeof(type)))
 #define cs_free_object(obj) (free(obj))

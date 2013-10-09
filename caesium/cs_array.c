@@ -4,7 +4,7 @@ static void array_grow(CsArray* arr) {
   size_t i;
   arr->size *= 2;
   arr->buckets = realloc(arr->buckets, sizeof(void*) * arr->size);
-  if (arr->buckets == NULL)
+  if (cs_unlikely(arr->buckets == NULL))
     cs_exit(CS_REASON_NOMEM);
   for (i = arr->length; i < arr->size; i++)
     arr->buckets[i] = NULL;
@@ -13,7 +13,7 @@ static void array_grow(CsArray* arr) {
 CsArray* cs_array_new() {
   size_t i = 0;
   CsArray* arr = cs_alloc_object(CsArray);
-  if (arr == NULL)
+  if (cs_unlikely(arr == NULL))
     cs_exit(CS_REASON_NOMEM);
   arr->size = 8;
   arr->length = 0;
@@ -31,34 +31,34 @@ void cs_array_free(CsArray* arr) {
 }
 
 bool cs_array_find(CsArray* arr, long pos, void* data) {
-  long i = (pos < 0)? ((long) arr->length) + pos : pos;
-  cs_return_if(i >= (long) arr->length || i < 0, false);
-  data = arr->buckets + i;
+  long i = (pos < 0)? ((long) arr->length) + pos + 1: pos;
+  cs_return_if(i > (long) arr->length || i < 0, false);
+  data = arr->buckets[i];
   return true;
 }
 
 bool cs_array_insert(CsArray* arr, long pos, void* data) {
-  long i = (pos < 0)? ((long) arr->length) + pos : pos;
-  cs_return_if(i >= (long) arr->length || i < 0, false);
+  long i = (pos < 0)? ((long) arr->length) + pos + 1 : pos;
+  cs_return_if(i > (long) arr->length || i < 0, false);
   memmove(
-    arr->buckets + pos + 1,
-    arr->buckets + pos,
-    sizeof(void*) * (arr->length - pos));
+    arr->buckets + i + 1,
+    arr->buckets + i,
+    sizeof(void*) * (arr->length - i));
   arr->length++;
-  arr->buckets[pos] = data;
+  arr->buckets[i] = data;
   if (arr->length == arr->size)
     array_grow(arr);
   return true;
 }
 
 bool cs_array_remove(CsArray* arr, long pos, void* data) {
-  long i = (pos < 0)? ((long) arr->length) + pos : pos;
-  cs_return_if(i >= (long) arr->length || i < 0, false);
-  data = arr->buckets[pos];
+  long i = (pos < 0)? ((long) arr->length) + pos + 1: pos;
+  cs_return_if(i > (long) arr->length || i < 0, false);
+  data = arr->buckets[i];
   memmove(
-    arr->buckets + pos,
-    arr->buckets + pos + 1,
-    sizeof(void*) * (arr->length - pos - 1));
+    arr->buckets + i,
+    arr->buckets + i + 1,
+    sizeof(void*) * (arr->length - i - 1));
   arr->length--;
   return true;
 }
