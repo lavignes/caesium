@@ -1,5 +1,24 @@
 #include "cs_bytecode.h"
 
+uint32_t cs_bytecode_make_type1(CsOpcode opcode, int a, int b, int c) {
+  uint32_t instruction = cs_bytecode_set_opcode(0, opcode);
+  instruction = cs_bytecode_set_a(instruction, a);
+  instruction = cs_bytecode_set_b(instruction, b);
+  return cs_bytecode_set_c(instruction, c);
+}
+
+uint32_t cs_bytecode_make_type2(CsOpcode opcode, int a, int imm) {
+  uint32_t instruction = cs_bytecode_set_opcode(0, opcode);
+  instruction = cs_bytecode_set_a(instruction, a);
+  return cs_bytecode_set_imm(instruction, imm);
+}
+
+uint32_t cs_bytecode_make_type3(CsOpcode opcode, int a, int simm) {
+  uint32_t instruction = cs_bytecode_set_opcode(0, opcode);
+  instruction = cs_bytecode_set_a(instruction, a);
+  return cs_bytecode_set_imm(instruction, simm);
+}
+
 void cs_bytechunk_free(CsByteChunk* chunk) {
   cs_bytefunction_free(chunk->entry);
   cs_free_object(chunk);

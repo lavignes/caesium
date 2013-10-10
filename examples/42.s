@@ -4,6 +4,6 @@
   .const 'QΔЙקم๗あ叶葉말 :]'
   .const 42
   loadk 0 1
-  storg 1 0
-  ret 0 1
+  #storg 1 0
+  #ret 0 1
 .end

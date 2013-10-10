@@ -66,6 +66,7 @@ CsByteChunk* cs_assembler_assemble(
   const char* u8str,
   size_t size)
 {
+  uint32_t instruction;
   int arg0, arg1, arg2;
   double karg;
   long start, end;
@@ -173,8 +174,16 @@ CsByteChunk* cs_assembler_assemble(
                 cs_array_insert(cur_func->consts, -1, konst);
                 break;
 
-              case CS_ASM_STATE_MOVE ... CS_ASM_STATE_RET:
-                cs_debug("ARGS: %s\n", buffer);
+              case CS_ASM_STATE_MOVE:
+                if (sscanf(buffer, "%d %d", &arg0, &arg1) != 2) {
+                  cs_error("%zu:%zu: wrong number of operands for move\n",
+                    line, col);
+                  cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
+                }
+                instruction =
+                  cs_bytecode_make_type1(CS_OPCODE_MOVE, arg0, arg1, 0);
+                cur_func = cs_list_peek_back(fstack);
+                cs_array_insert(cur_func->codes, -1, (void*) (uintptr_t) instruction);
                 break;
 
               default:

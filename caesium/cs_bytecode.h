@@ -38,18 +38,18 @@ typedef enum CsOpcode {
   CS_OPCODE_RET,     // ret A B     -> return R[A], ... R[A+B-2]
 } CsOpcode;
 
-#define CS_BYTECODE_OPCODE_MASK 0x0000003F;
-#define CS_BYTECODE_A_MASK      0x00003FC0;
-#define CS_BYTECODE_C_MASK      0x007FC000;
-#define CS_BYTECODE_B_MASK      0xFF800000;
-#define CS_BYTECODE_IMM_MASK    0xFFFFC000;
+#define CS_BYTECODE_OPCODE_MASK 0x0000003F
+#define CS_BYTECODE_A_MASK      0x00003FC0
+#define CS_BYTECODE_C_MASK      0x007FC000
+#define CS_BYTECODE_B_MASK      0xFF800000
+#define CS_BYTECODE_IMM_MASK    0xFFFFC000
 
 /**
  * a bytecode instruction
  * format:
- *   32[  B:9 C:9  A:8 opcode:6 ]0
- *   32[   IMM:18  A:8 opcode:6 ]0
- *   32[  sIMM:18  A:8 opcode:6 ]0
+ *   32[  B:9 C:9  A:8 opcode:6 ]0   TYPE1
+ *   32[   IMM:18  A:8 opcode:6 ]0   TYPE2
+ *   32[  sIMM:18  A:8 opcode:6 ]0   TYPE3
  */
 typedef uint32_t CsByteCode;
 
@@ -76,7 +76,7 @@ typedef uint32_t CsByteCode;
 
 #define CS_NSTACKS_MAX 250
 #define CS_NLOCALS_MAX 200
-#define CS_NUPVALS_MAX 60
+#define CS_NUPVALS_MAX 60 
 
 typedef enum CsByteConstType {
   CS_CONST_TYPE_NIL,
@@ -121,6 +121,17 @@ typedef struct CsByteChunk {
   size_t size;
   CsByteFunction* entry;
 } CsByteChunk;
+
+typedef struct CsInstruction1 {
+  enum CsOpcode opcode: 6;
+  unsigned a: 8;
+  unsigned c: 9;
+  unsigned b: 9;
+} CsInstruction1;
+
+uint32_t cs_bytecode_make_type1(CsOpcode opcode, int a, int b, int c);
+uint32_t cs_bytecode_make_type2(CsOpcode opcode, int a, int imm);
+uint32_t cs_bytecode_make_type3(CsOpcode opcode, int a, int simm);
 
 const char* cs_bytechunk_serialize(CsByteChunk* chunk);
 
