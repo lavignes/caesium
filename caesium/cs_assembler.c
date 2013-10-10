@@ -130,10 +130,6 @@ CsByteChunk* cs_assembler_assemble(
                     line, col);
                   cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
                 }
-                cs_debug("PARAMS: %d\n"
-                         "UPVALS: %d\n"
-                         "STACKS: %d\n",
-                         arg0, arg1, arg2);
                 func = cs_alloc_object(CsByteFunction);
                 if (cs_unlikely(func == NULL))
                   cs_exit(CS_REASON_NOMEM);
@@ -183,7 +179,398 @@ CsByteChunk* cs_assembler_assemble(
                 instruction =
                   cs_bytecode_make_type1(CS_OPCODE_MOVE, arg0, arg1, 0);
                 cur_func = cs_list_peek_back(fstack);
-                cs_array_insert(cur_func->codes, -1, (void*) (uintptr_t) instruction);
+                cs_array_insert(cur_func->codes, -1,
+                  (void*) (uintptr_t) instruction);
+                break;
+
+              case CS_ASM_STATE_LOADK:
+                if (sscanf(buffer, "%d %d", &arg0, &arg1) != 2) {
+                  cs_error("%zu:%zu: wrong number of operands for loadk\n",
+                    line, col);
+                  cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
+                }
+                instruction =
+                  cs_bytecode_make_type1(CS_OPCODE_LOADK, arg0, arg1, 0);
+                cur_func = cs_list_peek_back(fstack);
+                cs_array_insert(cur_func->codes, -1,
+                  (void*) (uintptr_t) instruction);
+                break;
+
+              case CS_ASM_STATE_LOADG:
+                if (sscanf(buffer, "%d %d", &arg0, &arg1) != 2) {
+                  cs_error("%zu:%zu: wrong number of operands for loadg\n",
+                    line, col);
+                  cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
+                }
+                instruction =
+                  cs_bytecode_make_type1(CS_OPCODE_LOADG, arg0, arg1, 0);
+                cur_func = cs_list_peek_back(fstack);
+                cs_array_insert(cur_func->codes, -1,
+                  (void*) (uintptr_t) instruction);
+                break;
+
+              case CS_ASM_STATE_STORG:
+                if (sscanf(buffer, "%d %d", &arg0, &arg1) != 2) {
+                  cs_error("%zu:%zu: wrong number of operands for storg\n",
+                    line, col);
+                  cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
+                }
+                instruction =
+                  cs_bytecode_make_type1(CS_OPCODE_STORG, arg0, arg1, 0);
+                cur_func = cs_list_peek_back(fstack);
+                cs_array_insert(cur_func->codes, -1,
+                  (void*) (uintptr_t) instruction);
+                break;
+
+              case CS_ASM_STATE_LOADI:
+                if (sscanf(buffer, "%d %d %d", &arg0, &arg1, &arg2) != 3) {
+                  cs_error("%zu:%zu: wrong number of operands for loadi\n",
+                    line, col);
+                  cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
+                }
+                instruction =
+                  cs_bytecode_make_type1(CS_OPCODE_LOADI, arg0, arg1, arg2);
+                cur_func = cs_list_peek_back(fstack);
+                cs_array_insert(cur_func->codes, -1,
+                  (void*) (uintptr_t) instruction);
+                break;
+
+              case CS_ASM_STATE_STORI:
+                if (sscanf(buffer, "%d %d %d", &arg0, &arg1, &arg2) != 3) {
+                  cs_error("%zu:%zu: wrong number of operands for stori\n",
+                    line, col);
+                  cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
+                }
+                instruction =
+                  cs_bytecode_make_type1(CS_OPCODE_STORI, arg0, arg1, arg2);
+                cur_func = cs_list_peek_back(fstack);
+                cs_array_insert(cur_func->codes, -1,
+                  (void*) (uintptr_t) instruction);
+                break;
+
+              case CS_ASM_STATE_LODUP:
+                if (sscanf(buffer, "%d %d", &arg0, &arg1) != 2) {
+                  cs_error("%zu:%zu: wrong number of operands for lodup\n",
+                    line, col);
+                  cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
+                }
+                instruction =
+                  cs_bytecode_make_type1(CS_OPCODE_LODUP, arg0, arg1, 0);
+                cur_func = cs_list_peek_back(fstack);
+                cs_array_insert(cur_func->codes, -1,
+                  (void*) (uintptr_t) instruction);
+                break;
+
+              case CS_ASM_STATE_STRUP:
+                if (sscanf(buffer, "%d %d", &arg0, &arg1) != 2) {
+                  cs_error("%zu:%zu: wrong number of operands for strup\n",
+                    line, col);
+                  cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
+                }
+                instruction =
+                  cs_bytecode_make_type1(CS_OPCODE_STRUP, arg0, arg1, 0);
+                cur_func = cs_list_peek_back(fstack);
+                cs_array_insert(cur_func->codes, -1,
+                  (void*) (uintptr_t) instruction);
+                break;
+
+              case CS_ASM_STATE_ADD:
+                if (sscanf(buffer, "%d %d %d", &arg0, &arg1, &arg2) != 3) {
+                  cs_error("%zu:%zu: wrong number of operands for add\n",
+                    line, col);
+                  cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
+                }
+                instruction =
+                  cs_bytecode_make_type1(CS_OPCODE_ADD, arg0, arg1, arg2);
+                cur_func = cs_list_peek_back(fstack);
+                cs_array_insert(cur_func->codes, -1,
+                  (void*) (uintptr_t) instruction);
+                break;
+
+              case CS_ASM_STATE_SUB:
+                if (sscanf(buffer, "%d %d %d", &arg0, &arg1, &arg2) != 3) {
+                  cs_error("%zu:%zu: wrong number of operands for sub\n",
+                    line, col);
+                  cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
+                }
+                instruction =
+                  cs_bytecode_make_type1(CS_OPCODE_SUB, arg0, arg1, arg2);
+                cur_func = cs_list_peek_back(fstack);
+                cs_array_insert(cur_func->codes, -1,
+                  (void*) (uintptr_t) instruction);
+                break;
+
+              case CS_ASM_STATE_MUL:
+                if (sscanf(buffer, "%d %d %d", &arg0, &arg1, &arg2) != 3) {
+                  cs_error("%zu:%zu: wrong number of operands for mul\n",
+                    line, col);
+                  cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
+                }
+                instruction =
+                  cs_bytecode_make_type1(CS_OPCODE_MUL, arg0, arg1, arg2);
+                cur_func = cs_list_peek_back(fstack);
+                cs_array_insert(cur_func->codes, -1,
+                  (void*) (uintptr_t) instruction);
+                break;
+
+              case CS_ASM_STATE_DIV:
+                if (sscanf(buffer, "%d %d %d", &arg0, &arg1, &arg2) != 3) {
+                  cs_error("%zu:%zu: wrong number of operands for div\n",
+                    line, col);
+                  cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
+                }
+                instruction =
+                  cs_bytecode_make_type1(CS_OPCODE_DIV, arg0, arg1, arg2);
+                cur_func = cs_list_peek_back(fstack);
+                cs_array_insert(cur_func->codes, -1,
+                  (void*) (uintptr_t) instruction);
+                break;
+
+              case CS_ASM_STATE_MOD:
+                if (sscanf(buffer, "%d %d %d", &arg0, &arg1, &arg2) != 3) {
+                  cs_error("%zu:%zu: wrong number of operands for mod\n",
+                    line, col);
+                  cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
+                }
+                instruction =
+                  cs_bytecode_make_type1(CS_OPCODE_MOD, arg0, arg1, arg2);
+                cur_func = cs_list_peek_back(fstack);
+                cs_array_insert(cur_func->codes, -1,
+                  (void*) (uintptr_t) instruction);
+                break;
+
+              case CS_ASM_STATE_POW:
+                if (sscanf(buffer, "%d %d %d", &arg0, &arg1, &arg2) != 3) {
+                  cs_error("%zu:%zu: wrong number of operands for pow\n",
+                    line, col);
+                  cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
+                }
+                instruction =
+                  cs_bytecode_make_type1(CS_OPCODE_POW, arg0, arg1, arg2);
+                cur_func = cs_list_peek_back(fstack);
+                cs_array_insert(cur_func->codes, -1,
+                  (void*) (uintptr_t) instruction);
+                break;
+
+              case CS_ASM_STATE_NEG:
+                if (sscanf(buffer, "%d %d", &arg0, &arg1) != 2) {
+                  cs_error("%zu:%zu: wrong number of operands for neg\n",
+                    line, col);
+                  cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
+                }
+                instruction =
+                  cs_bytecode_make_type1(CS_OPCODE_NEG, arg0, arg1, 0);
+                cur_func = cs_list_peek_back(fstack);
+                cs_array_insert(cur_func->codes, -1,
+                  (void*) (uintptr_t) instruction);
+                break;
+
+              case CS_ASM_STATE_AND:
+                if (sscanf(buffer, "%d %d %d", &arg0, &arg1, &arg2) != 3) {
+                  cs_error("%zu:%zu: wrong number of operands for and\n",
+                    line, col);
+                  cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
+                }
+                instruction =
+                  cs_bytecode_make_type1(CS_OPCODE_AND, arg0, arg1, arg2);
+                cur_func = cs_list_peek_back(fstack);
+                cs_array_insert(cur_func->codes, -1,
+                  (void*) (uintptr_t) instruction);
+                break;
+
+              case CS_ASM_STATE_OR:
+                if (sscanf(buffer, "%d %d %d", &arg0, &arg1, &arg2) != 3) {
+                  cs_error("%zu:%zu: wrong number of operands for or\n",
+                    line, col);
+                  cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
+                }
+                instruction =
+                  cs_bytecode_make_type1(CS_OPCODE_OR, arg0, arg1, arg2);
+                cur_func = cs_list_peek_back(fstack);
+                cs_array_insert(cur_func->codes, -1,
+                  (void*) (uintptr_t) instruction);
+                break;
+
+              case CS_ASM_STATE_XOR:
+                if (sscanf(buffer, "%d %d %d", &arg0, &arg1, &arg2) != 3) {
+                  cs_error("%zu:%zu: wrong number of operands for xor\n",
+                    line, col);
+                  cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
+                }
+                instruction =
+                  cs_bytecode_make_type1(CS_OPCODE_XOR, arg0, arg1, arg2);
+                cur_func = cs_list_peek_back(fstack);
+                cs_array_insert(cur_func->codes, -1,
+                  (void*) (uintptr_t) instruction);
+                break;
+
+              case CS_ASM_STATE_NOT:
+                if (sscanf(buffer, "%d %d", &arg0, &arg1) != 2) {
+                  cs_error("%zu:%zu: wrong number of operands for and\n",
+                    line, col);
+                  cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
+                }
+                instruction =
+                  cs_bytecode_make_type1(CS_OPCODE_NOT, arg0, arg1, 0);
+                cur_func = cs_list_peek_back(fstack);
+                cs_array_insert(cur_func->codes, -1,
+                  (void*) (uintptr_t) instruction);
+                break;
+
+              case CS_ASM_STATE_SHL:
+                if (sscanf(buffer, "%d %d %d", &arg0, &arg1, &arg2) != 3) {
+                  cs_error("%zu:%zu: wrong number of operands for shl\n",
+                    line, col);
+                  cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
+                }
+                instruction =
+                  cs_bytecode_make_type1(CS_OPCODE_SHL, arg0, arg1, arg2);
+                cur_func = cs_list_peek_back(fstack);
+                cs_array_insert(cur_func->codes, -1,
+                  (void*) (uintptr_t) instruction);
+                break;
+
+              case CS_ASM_STATE_SHR:
+                if (sscanf(buffer, "%d %d %d", &arg0, &arg1, &arg2) != 3) {
+                  cs_error("%zu:%zu: wrong number of operands for shr\n",
+                    line, col);
+                  cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
+                }
+                instruction =
+                  cs_bytecode_make_type1(CS_OPCODE_SHR, arg0, arg1, arg2);
+                cur_func = cs_list_peek_back(fstack);
+                cs_array_insert(cur_func->codes, -1,
+                  (void*) (uintptr_t) instruction);
+                break;
+
+              case CS_ASM_STATE_JMP:
+                if (sscanf(buffer, "%d", &arg0) != 1) {
+                  cs_error("%zu:%zu: wrong number of operands for jmp\n",
+                    line, col);
+                  cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
+                }
+                instruction =
+                  cs_bytecode_make_type3(CS_OPCODE_JMP, 0, arg0);
+                cur_func = cs_list_peek_back(fstack);
+                cs_array_insert(cur_func->codes, -1,
+                  (void*) (uintptr_t) instruction);
+                break;
+
+              case CS_ASM_STATE_IF:
+                if (sscanf(buffer, "%d %d", &arg0, &arg1) != 2) {
+                  cs_error("%zu:%zu: wrong number of operands for if\n",
+                    line, col);
+                  cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
+                }
+                instruction =
+                  cs_bytecode_make_type3(CS_OPCODE_IF, arg0, arg1);
+                cur_func = cs_list_peek_back(fstack);
+                cs_array_insert(cur_func->codes, -1,
+                  (void*) (uintptr_t) instruction);
+                break;
+
+              case CS_ASM_STATE_LT:
+                if (sscanf(buffer, "%d %d %d", &arg0, &arg1, &arg2) != 3) {
+                  cs_error("%zu:%zu: wrong number of operands for lt\n",
+                    line, col);
+                  cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
+                }
+                instruction =
+                  cs_bytecode_make_type1(CS_OPCODE_LT, arg0, arg1, arg2);
+                cur_func = cs_list_peek_back(fstack);
+                cs_array_insert(cur_func->codes, -1,
+                  (void*) (uintptr_t) instruction);
+                break;
+
+              case CS_ASM_STATE_LE:
+                if (sscanf(buffer, "%d %d %d", &arg0, &arg1, &arg2) != 3) {
+                  cs_error("%zu:%zu: wrong number of operands for le\n",
+                    line, col);
+                  cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
+                }
+                instruction =
+                  cs_bytecode_make_type1(CS_OPCODE_LE, arg0, arg1, arg2);
+                cur_func = cs_list_peek_back(fstack);
+                cs_array_insert(cur_func->codes, -1,
+                  (void*) (uintptr_t) instruction);
+                break;
+
+              case CS_ASM_STATE_EQ:
+                if (sscanf(buffer, "%d %d %d", &arg0, &arg1, &arg2) != 3) {
+                  cs_error("%zu:%zu: wrong number of operands for eq\n",
+                    line, col);
+                  cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
+                }
+                instruction =
+                  cs_bytecode_make_type1(CS_OPCODE_EQ, arg0, arg1, arg2);
+                cur_func = cs_list_peek_back(fstack);
+                cs_array_insert(cur_func->codes, -1,
+                  (void*) (uintptr_t) instruction);
+                break;
+
+              case CS_ASM_STATE_CLOS:
+                if (sscanf(buffer, "%d %d", &arg0, &arg1) != 2) {
+                  cs_error("%zu:%zu: wrong number of operands for clos\n",
+                    line, col);
+                  cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
+                }
+                instruction =
+                  cs_bytecode_make_type2(CS_OPCODE_CLOS, arg0, arg1);
+                cur_func = cs_list_peek_back(fstack);
+                cs_array_insert(cur_func->codes, -1,
+                  (void*) (uintptr_t) instruction);
+                break;
+
+              case CS_ASM_STATE_CPYUP:
+                if (sscanf(buffer, "%d %d %d", &arg0, &arg1, &arg2) != 3) {
+                  cs_error("%zu:%zu: wrong number of operands for cpyup\n",
+                    line, col);
+                  cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
+                }
+                instruction =
+                  cs_bytecode_make_type1(CS_OPCODE_CPYUP, arg0, arg1, arg2);
+                cur_func = cs_list_peek_back(fstack);
+                cs_array_insert(cur_func->codes, -1,
+                  (void*) (uintptr_t) instruction);
+                break;
+
+              case CS_ASM_STATE_MOVUP:
+                if (sscanf(buffer, "%d %d %d", &arg0, &arg1, &arg2) != 3) {
+                  cs_error("%zu:%zu: wrong number of operands for movup\n",
+                    line, col);
+                  cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
+                }
+                instruction =
+                  cs_bytecode_make_type1(CS_OPCODE_MOVUP, arg0, arg1, arg2);
+                cur_func = cs_list_peek_back(fstack);
+                cs_array_insert(cur_func->codes, -1,
+                  (void*) (uintptr_t) instruction);
+                break;
+
+              case CS_ASM_STATE_CALL:
+                if (sscanf(buffer, "%d %d %d", &arg0, &arg1, &arg2) != 3) {
+                  cs_error("%zu:%zu: wrong number of operands for call\n",
+                    line, col);
+                  cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
+                }
+                instruction =
+                  cs_bytecode_make_type1(CS_OPCODE_CALL, arg0, arg1, arg2);
+                cur_func = cs_list_peek_back(fstack);
+                cs_array_insert(cur_func->codes, -1,
+                  (void*) (uintptr_t) instruction);
+                break;
+
+              case CS_ASM_STATE_RET:
+                if (sscanf(buffer, "%d %d", &arg0, &arg1) != 2) {
+                  cs_error("%zu:%zu: wrong number of operands for ret\n",
+                    line, col);
+                  cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
+                }
+                instruction =
+                  cs_bytecode_make_type2(CS_OPCODE_RET, arg0, arg1);
+                cur_func = cs_list_peek_back(fstack);
+                cs_array_insert(cur_func->codes, -1,
+                  (void*) (uintptr_t) instruction);
                 break;
 
               default:

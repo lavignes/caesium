@@ -118,16 +118,38 @@ typedef struct CsByteFunction {
  * a bytecode chunk
  */
 typedef struct CsByteChunk {
-  size_t size;
   CsByteFunction* entry;
 } CsByteChunk;
 
+/**
+ * An executable bytecode chunk
+ */
+typedef struct CsVMChunk {
+
+} CsVMChunk;
+
+/**
+ * These are helper structs used for debugging.
+ * cast CsByteCode into these to have human readable forms
+ */
 typedef struct CsInstruction1 {
   enum CsOpcode opcode: 6;
   unsigned a: 8;
   unsigned c: 9;
   unsigned b: 9;
 } CsInstruction1;
+
+typedef struct CsInstruction2 {
+  enum CsOpcode opcode: 6;
+  unsigned a: 8;
+  unsigned imm: 18;
+} CsInstruction2;
+
+typedef struct CsInstruction3 {
+  enum CsOpcode opcode: 6;
+  unsigned a: 8;
+  int simm: 18;
+} CsInstruction3;
 
 uint32_t cs_bytecode_make_type1(CsOpcode opcode, int a, int b, int c);
 uint32_t cs_bytecode_make_type2(CsOpcode opcode, int a, int imm);
