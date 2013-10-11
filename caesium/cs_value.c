@@ -1,16 +1,5 @@
 #include "cs_value.h"
 
-typedef struct CsValueStruct {
-  CsValueType type;
-  union {
-    double real;
-    struct {
-      size_t length;
-      char* u8data;
-    } string;
-  };
-} CsValueStruct;
-
 static CsValueStruct _CS_NIL = {
   type: CS_VALUE_NIL,
 };

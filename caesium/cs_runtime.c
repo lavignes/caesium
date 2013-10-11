@@ -69,8 +69,9 @@ static int entry(CsMutator* mut, void* data) {
   CsAssembler* assembler = cs_assembler_new();
   CsByteChunk* chunk =
     cs_assembler_assemble(assembler, edata->u8str, edata->size);
+  cs_free_object((char*) edata->u8str);
   cs_assembler_free(assembler);
-  /* free the chunk for now */
+  cs_mutator_exec(mut, chunk);
   cs_bytechunk_free(chunk);
   return 0;
 }
@@ -82,5 +83,4 @@ void cs_runtime_doassembly(CsRuntime* cs, const char* u8str, size_t size) {
   cs_mutator_start(mut0, entry, &edata);
   if (thrd_join(mut0->thread, NULL) != thrd_success)
     cs_exit(CS_REASON_THRDFATAL);
-  free((void*) u8str);
 }

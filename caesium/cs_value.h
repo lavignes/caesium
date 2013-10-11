@@ -11,7 +11,17 @@ typedef enum CsValueType {
   CS_VALUE_STRING,
 } CsValueType;
 
-struct CsValueStruct;
+typedef struct CsValueStruct {
+  CsValueType type;
+  union {
+    double real;
+    struct {
+      size_t size;
+      char* string;
+    };
+  };
+} CsValueStruct;
+
 typedef struct CsValueStruct* CsValue;
 
 extern CsValue CS_TRUE;

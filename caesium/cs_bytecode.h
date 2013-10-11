@@ -83,8 +83,6 @@ typedef uint32_t CsByteCode;
 #define CS_NUPVALS_MAX 60 
 
 typedef enum CsByteConstType {
-  CS_CONST_TYPE_NIL,
-  CS_CONST_TYPE_BOOL,
   CS_CONST_TYPE_INT,
   CS_CONST_TYPE_REAL,
   CS_CONST_TYPE_STRING,
@@ -102,7 +100,6 @@ typedef struct CsByteConst {
     };
     uint32_t integer;
     double real;
-    bool boolean;
   }; // <3
 } CsByteConst;
 
