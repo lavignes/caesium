@@ -11,28 +11,21 @@ typedef enum CsValueType {
   CS_VALUE_STRING,
 } CsValueType;
 
-typedef struct CsValueStruct {
-  CsValueType type;
-  union {
-    double real;
-    struct {
-      size_t length;
-      char* u8data;
-    } string;
-  };
-} CsValueStruct;
-
-typedef CsValueStruct* CsValue;
+struct CsValueStruct;
+typedef struct CsValueStruct* CsValue;
 
 extern CsValue CS_TRUE;
 extern CsValue CS_FALSE;
 extern CsValue CS_NIL;
 
-#define CS_VALUE_TYPE(value) value->type
+#define cs_value_get_type(value) (value->type)
 
 // test whether a value is an integer
-#define CS_VALUE_VALISINT(value) ((intptr_t) value) & 0x1)
-#define CS_VALUE_VAL2INT(value) ((intptr_t) value) >> 0x1)
-#define CS_VALUE_INT2VAL(i) ((CsValue) ((intptr_t) i) << 0x1))
+#define cs_value_isint(value) (((intptr_t) value) & 0x1)
+#define cs_value_toint(value) (((intptr_t) value) >> 0x1)
+#define cs_value_fromint(i) ((CsValue) (((intptr_t) i) << 0x1))
+
+#define cs_value_toreal(value) ((double) value->real)
+#define cs_value_tostring(value) ((double) value->string)
 
 #endif /* _CS_VALUE_H_ */
