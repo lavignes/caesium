@@ -24,6 +24,8 @@ void setup_assembler() {
   cs_hash_insert(assembler_ops, "stori", 5, (void*) CS_OPCODE_STORI);
   cs_hash_insert(assembler_ops, "lodup", 5, (void*) CS_OPCODE_LODUP);
   cs_hash_insert(assembler_ops, "strup", 5, (void*) CS_OPCODE_STRUP);
+  cs_hash_insert(assembler_ops, "puts", 4, (void*) CS_OPCODE_PUTS);
+  cs_hash_insert(assembler_ops, "new", 3, (void*) CS_OPCODE_NEW);
   cs_hash_insert(assembler_ops, "add", 3, (void*) CS_OPCODE_ADD);
   cs_hash_insert(assembler_ops, "sub", 3, (void*) CS_OPCODE_SUB);
   cs_hash_insert(assembler_ops, "mul", 3, (void*) CS_OPCODE_MUL);
@@ -35,10 +37,10 @@ void setup_assembler() {
   cs_hash_insert(assembler_ops, "or", 2, (void*) CS_OPCODE_OR);
   cs_hash_insert(assembler_ops, "xor", 3, (void*) CS_OPCODE_XOR);
   cs_hash_insert(assembler_ops, "not", 3, (void*) CS_OPCODE_NOT);
-  cs_hash_insert(assembler_ops, "not", 3, (void*) CS_OPCODE_NOT);
   cs_hash_insert(assembler_ops, "shl", 3, (void*) CS_OPCODE_SHL);
   cs_hash_insert(assembler_ops, "shr", 3, (void*) CS_OPCODE_SHR);
   cs_hash_insert(assembler_ops, "jmp", 3, (void*) CS_OPCODE_JMP);
+  cs_hash_insert(assembler_ops, "if", 2, (void*) CS_OPCODE_IF);
   cs_hash_insert(assembler_ops, "lt", 2, (void*) CS_OPCODE_LT);
   cs_hash_insert(assembler_ops, "le", 2, (void*) CS_OPCODE_LE);
   cs_hash_insert(assembler_ops, "eq", 2, (void*) CS_OPCODE_EQ);
@@ -47,6 +49,9 @@ void setup_assembler() {
   cs_hash_insert(assembler_ops, "movup", 5, (void*) CS_OPCODE_MOVUP);
   cs_hash_insert(assembler_ops, "call", 4, (void*) CS_OPCODE_CALL);
   cs_hash_insert(assembler_ops, "ret", 3, (void*) CS_OPCODE_RET);
+  cs_hash_insert(assembler_ops, "spwn", 4, (void*) CS_OPCODE_SPWN);
+  cs_hash_insert(assembler_ops, "send", 4, (void*) CS_OPCODE_SEND);
+  cs_hash_insert(assembler_ops, "recv", 4, (void*) CS_OPCODE_RECV);
 }
 
 void shutdown_assembler() {
@@ -267,6 +272,32 @@ CsByteChunk* cs_assembler_assemble(
                 }
                 instruction =
                   cs_bytecode_make_type1(CS_OPCODE_STRUP, arg0, arg1, 0);
+                cur_func = cs_list_peek_back(fstack);
+                cs_array_insert(cur_func->codes, -1,
+                  (void*) (uintptr_t) instruction);
+                break;
+
+              case CS_ASM_STATE_PUTS:
+                if (sscanf(buffer, "%d", &arg0) != 1) {
+                  cs_error("%zu:%zu: wrong number of operands for puts\n",
+                    line, col);
+                  cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
+                }
+                instruction =
+                  cs_bytecode_make_type1(CS_OPCODE_PUTS, arg0, 0, 0);
+                cur_func = cs_list_peek_back(fstack);
+                cs_array_insert(cur_func->codes, -1,
+                  (void*) (uintptr_t) instruction);
+                break;
+
+              case CS_ASM_STATE_NEW:
+                if (sscanf(buffer, "%d %d", &arg0, &arg1) != 2) {
+                  cs_error("%zu:%zu: wrong number of operands for new\n",
+                    line, col);
+                  cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
+                }
+                instruction =
+                  cs_bytecode_make_type1(CS_OPCODE_NEW, arg0, arg1, 0);
                 cur_func = cs_list_peek_back(fstack);
                 cs_array_insert(cur_func->codes, -1,
                   (void*) (uintptr_t) instruction);

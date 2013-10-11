@@ -12,6 +12,7 @@ typedef enum CsOpcode {
   CS_OPCODE_STORI,   // stori A B C -> R[B][RK[C]] = R[A]
   CS_OPCODE_LODUP,   // lodup A B   -> R[A] = U[B]
   CS_OPCODE_STRUP,   // strup A B   -> U[B] = R[A]
+  CS_OPCODE_PUTS,    // puts A      -> printf(R[A])
   CS_OPCODE_NEW,     // new A B     -> R[A] = new R[B]
   CS_OPCODE_ADD,     // add A B C   -> R[A] = RK[B] + RK[C]
   CS_OPCODE_SUB,     // sub A B C   -> R[A] = RK[B] - RK[C]
