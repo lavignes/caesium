@@ -52,6 +52,9 @@ typedef enum CsAsmState {
   CS_ASM_STATE_CPYUP,
   CS_ASM_STATE_CALL,
   CS_ASM_STATE_RET,
+  CS_ASM_STATE_SPWN,
+  CS_ASM_STATE_SEND,
+  CS_ASM_STATE_RECV,
 } CsAsmState;
 
 typedef struct CsAssembler {

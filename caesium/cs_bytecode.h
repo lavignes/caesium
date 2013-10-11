@@ -36,6 +36,9 @@ typedef enum CsOpcode {
   CS_OPCODE_MOVUP,   // movup A B C -> R[A].UP[B] = UP[C]
   CS_OPCODE_CALL,    // call A B C  -> R[A], ... R[A+C-2] = R[A](R[A+B-1])
   CS_OPCODE_RET,     // ret A B     -> return R[A], ... R[A+B-2]
+  CS_OPCODE_SPWN,    // spwn A IMM  -> R[A] = T.append(new thread(F[IMM]))
+  CS_OPCODE_SEND,    // send A B    -> R[A].push_back(copymutable R[B])
+  CS_OPCODE_RECV,    // recv A B    -> R[A] = R[B].pop_front()
 } CsOpcode;
 
 #define CS_BYTECODE_OPCODE_MASK 0x0000003F
@@ -122,16 +125,10 @@ typedef struct CsByteChunk {
 } CsByteChunk;
 
 /**
- * An executable bytecode chunk
- */
-typedef struct CsVMChunk {
-
-} CsVMChunk;
-
-/**
  * These are helper structs used for debugging.
  * cast CsByteCode into these to have human readable forms
  */
+#ifdef CS_DEBUG
 typedef struct CsInstruction1 {
   enum CsOpcode opcode: 6;
   unsigned a: 8;
@@ -150,6 +147,11 @@ typedef struct CsInstruction3 {
   unsigned a: 8;
   int simm: 18;
 } CsInstruction3;
+
+CsInstruction1 CS_INSTRUCTION1;
+CsInstruction2 CS_INSTRUCTION2;
+CsInstruction3 CS_INSTRUCTION3;
+#endif
 
 uint32_t cs_bytecode_make_type1(CsOpcode opcode, int a, int b, int c);
 uint32_t cs_bytecode_make_type2(CsOpcode opcode, int a, int imm);

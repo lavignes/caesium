@@ -149,7 +149,6 @@ CsByteChunk* cs_assembler_assemble(
                   cs_exit(CS_REASON_NOMEM);
                 konst->type = CS_CONST_TYPE_REAL;
                 konst->real = karg;
-
                 // append const to consts list
                 cur_func = cs_list_peek_back(fstack);
                 cs_array_insert(cur_func->consts, -1, konst);
@@ -164,7 +163,6 @@ CsByteChunk* cs_assembler_assemble(
                 konst->string = buffer;
                 konst->size = strlen(buffer);
                 buffer = NULL; // this prevents freeing the buffer
-
                 // append const to consts list
                 cur_func = cs_list_peek_back(fstack);
                 cs_array_insert(cur_func->consts, -1, konst);
@@ -567,7 +565,46 @@ CsByteChunk* cs_assembler_assemble(
                   cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
                 }
                 instruction =
-                  cs_bytecode_make_type2(CS_OPCODE_RET, arg0, arg1);
+                  cs_bytecode_make_type1(CS_OPCODE_RET, arg0, arg1, 0);
+                cur_func = cs_list_peek_back(fstack);
+                cs_array_insert(cur_func->codes, -1,
+                  (void*) (uintptr_t) instruction);
+                break;
+
+              case CS_ASM_STATE_SPWN:
+                if (sscanf(buffer, "%d %d", &arg0, &arg1) != 2) {
+                  cs_error("%zu:%zu: wrong number of operands for spwn\n",
+                    line, col);
+                  cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
+                }
+                instruction =
+                  cs_bytecode_make_type2(CS_OPCODE_SPWN, arg0, arg1);
+                cur_func = cs_list_peek_back(fstack);
+                cs_array_insert(cur_func->codes, -1,
+                  (void*) (uintptr_t) instruction);
+                break;
+
+              case CS_ASM_STATE_SEND:
+                if (sscanf(buffer, "%d %d", &arg0, &arg1) != 2) {
+                  cs_error("%zu:%zu: wrong number of operands for send\n",
+                    line, col);
+                  cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
+                }
+                instruction =
+                  cs_bytecode_make_type1(CS_OPCODE_SEND, arg0, arg1, 0);
+                cur_func = cs_list_peek_back(fstack);
+                cs_array_insert(cur_func->codes, -1,
+                  (void*) (uintptr_t) instruction);
+                break;
+
+              case CS_ASM_STATE_RECV:
+                if (sscanf(buffer, "%d %d", &arg0, &arg1) != 2) {
+                  cs_error("%zu:%zu: wrong number of operands for recv\n",
+                    line, col);
+                  cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
+                }
+                instruction =
+                  cs_bytecode_make_type1(CS_OPCODE_RECV, arg0, arg1, 0);
                 cur_func = cs_list_peek_back(fstack);
                 cs_array_insert(cur_func->codes, -1,
                   (void*) (uintptr_t) instruction);
@@ -689,7 +726,7 @@ CsByteChunk* cs_assembler_assemble(
               switch (op) {
 
                 // THIS MIGHT WORK!!! :0
-                case CS_OPCODE_MOVE ... CS_OPCODE_RET:
+                case CS_OPCODE_MOVE ... CS_OPCODE_RECV:
                   cs_list_push_back(stack, (void*) CS_ASM_STATE_MOVE + op);
                   cs_list_push_back(stack, (void*) CS_ASM_STATE_ARGS);
                   break;
