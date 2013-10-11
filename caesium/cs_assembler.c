@@ -887,6 +887,7 @@ CsByteChunk* cs_assembler_assemble(
 
   // This location is impossible!
   cs_error("Assembly has no entry point!\n");
+  cs_error("(Are you missing a newline at the end of file?)\n");
   cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
 
   return_entry: cs_list_free(stack);
