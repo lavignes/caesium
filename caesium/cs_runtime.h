@@ -1,10 +1,15 @@
 #ifndef _CS_RUNTIME_H_
 #define _CS_RUNTIME_H_
 
+#include <tinycthread.h>
+
 #include "cs_list.h"
+#include "cs_hash.h"
 
 typedef struct CsRuntime {
 
+  mtx_t globals_lock;
+  CsHash* globals;
   CsList* mutators;
 
 } CsRuntime;

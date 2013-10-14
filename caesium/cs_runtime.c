@@ -10,6 +10,9 @@ CsRuntime* cs_runtime_new() {
   CsRuntime* cs = cs_alloc_object(CsRuntime);
   if (cs_unlikely(cs == NULL))
     cs_exit(CS_REASON_NOMEM);
+  if (mtx_init(&cs->globals_lock, mtx_plain) != thrd_success)
+    cs_exit(CS_REASON_THRDFATAL);
+  cs->globals = cs_hash_new();
   cs->mutators = cs_list_new();
   setup_assembler();
   return cs;

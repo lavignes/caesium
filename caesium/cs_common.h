@@ -32,10 +32,10 @@
 #define cs_alloc_object(type) ((type *) malloc(sizeof(type)))
 #define cs_free_object(obj) (free(obj))
 
-#define cs_error(...) fprintf(stderr, __VA_ARGS__)
+#define cs_error(...) fprintf(stderr, "\x1B[1;31m[!!!]\x1B[0m " __VA_ARGS__)
 
 #ifdef CS_DEBUG
-#define cs_debug(...) fprintf(stderr, __VA_ARGS__)
+#define cs_debug(...) fprintf(stderr, "\x1B[1;33m[???]\x1B[0m " __VA_ARGS__)
 #else
 #define cs_debug(...) (void)
 #endif

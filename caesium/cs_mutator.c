@@ -53,11 +53,18 @@ static CsStackFrame* create_stack_frame(CsByteFunction* func) {
 void cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
   CsStackFrame* frame = create_stack_frame(chunk->entry);
   CsByteConst* konst;
+  CsPair* pair;
   int a, b;
 
   for (frame->pc = 0; frame->pc < frame->ncodes; frame->pc++) {
     CsByteCode code = frame->codes[frame->pc];
     switch (code) {
+      case CS_OPCODE_MOVE:
+        a = cs_bytecode_get_a(code);
+        b = cs_bytecode_get_b(code);
+        frame->stacks[a] = frame->stacks[b];
+        break;
+
       case CS_OPCODE_LOADK:
         a = cs_bytecode_get_a(code);
         b = cs_bytecode_get_b(code);
@@ -68,6 +75,33 @@ void cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
         frame->stacks[a]->string = konst->string;
         break;
         
+      case CS_OPCODE_LOADG:
+        a = cs_bytecode_get_a(code);
+        b = cs_bytecode_get_b(code);
+        konst = frame->cur_func->consts->buckets[b];
+        mtx_lock(&mut->cs->globals_lock);
+        pair = cs_hash_find(mut->cs->globals, konst->string, konst->size);
+        mtx_unlock(&mut->cs->globals_lock);
+        if (cs_likely(pair != NULL))
+          frame->stacks[a] = pair->value;
+        else
+          // This should raise.... but just return NIL for now
+          frame->stacks[a] = CS_NIL;
+        break;
+
+      case CS_OPCODE_STORG:
+        a = cs_bytecode_get_a(code);
+        b = cs_bytecode_get_b(code);
+        konst = frame->cur_func->consts->buckets[b];
+        mtx_lock(&mut->cs->globals_lock);
+        cs_hash_insert(
+          mut->cs->globals,
+          konst->string,
+          konst->size,
+          frame->stacks[a]);
+        mtx_unlock(&mut->cs->globals_lock);
+        break;
+
       case CS_OPCODE_PUTS:
         a = cs_bytecode_get_a(code);
         printf("%s\n", frame->stacks[a]->string);
