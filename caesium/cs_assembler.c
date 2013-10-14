@@ -130,7 +130,7 @@ CsByteChunk* cs_assembler_assemble(
             switch (state) {
               case CS_ASM_STATE_ENTRY:
               case CS_ASM_STATE_FUNC:
-                if (sscanf(buffer, "%x %x %x", &arg0, &arg1, &arg2) != 3) {
+                if (sscanf(buffer, "%d %d %d", &arg0, &arg1, &arg2) != 3) {
                   cs_error("%zu:%zu: wrong number of operands pseudo op\n",
                     line, col);
                   cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
@@ -174,7 +174,7 @@ CsByteChunk* cs_assembler_assemble(
                 break;
 
               case CS_ASM_STATE_MOVE:
-                if (sscanf(buffer, "%x %x", &arg0, &arg1) != 2) {
+                if (sscanf(buffer, "%d %d", &arg0, &arg1) != 2) {
                   cs_error("%zu:%zu: wrong number of operands for move\n",
                     line, col);
                   cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
@@ -187,7 +187,7 @@ CsByteChunk* cs_assembler_assemble(
                 break;
 
               case CS_ASM_STATE_LOADK:
-                if (sscanf(buffer, "%x %x", &arg0, &arg1) != 2) {
+                if (sscanf(buffer, "%d %d", &arg0, &arg1) != 2) {
                   cs_error("%zu:%zu: wrong number of operands for loadk\n",
                     line, col);
                   cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
@@ -200,7 +200,7 @@ CsByteChunk* cs_assembler_assemble(
                 break;
 
               case CS_ASM_STATE_LOADG:
-                if (sscanf(buffer, "%x %x", &arg0, &arg1) != 2) {
+                if (sscanf(buffer, "%d %d", &arg0, &arg1) != 2) {
                   cs_error("%zu:%zu: wrong number of operands for loadg\n",
                     line, col);
                   cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
@@ -213,7 +213,7 @@ CsByteChunk* cs_assembler_assemble(
                 break;
 
               case CS_ASM_STATE_STORG:
-                if (sscanf(buffer, "%x %x", &arg0, &arg1) != 2) {
+                if (sscanf(buffer, "%d %d", &arg0, &arg1) != 2) {
                   cs_error("%zu:%zu: wrong number of operands for storg\n",
                     line, col);
                   cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
@@ -226,7 +226,7 @@ CsByteChunk* cs_assembler_assemble(
                 break;
 
               case CS_ASM_STATE_LOADI:
-                if (sscanf(buffer, "%x %x %x", &arg0, &arg1, &arg2) != 3) {
+                if (sscanf(buffer, "%d %d %d", &arg0, &arg1, &arg2) != 3) {
                   cs_error("%zu:%zu: wrong number of operands for loadi\n",
                     line, col);
                   cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
@@ -239,7 +239,7 @@ CsByteChunk* cs_assembler_assemble(
                 break;
 
               case CS_ASM_STATE_STORI:
-                if (sscanf(buffer, "%x %x %x", &arg0, &arg1, &arg2) != 3) {
+                if (sscanf(buffer, "%d %d %d", &arg0, &arg1, &arg2) != 3) {
                   cs_error("%zu:%zu: wrong number of operands for stori\n",
                     line, col);
                   cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
@@ -252,7 +252,7 @@ CsByteChunk* cs_assembler_assemble(
                 break;
 
               case CS_ASM_STATE_LODUP:
-                if (sscanf(buffer, "%x %x", &arg0, &arg1) != 2) {
+                if (sscanf(buffer, "%d %d", &arg0, &arg1) != 2) {
                   cs_error("%zu:%zu: wrong number of operands for lodup\n",
                     line, col);
                   cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
@@ -265,7 +265,7 @@ CsByteChunk* cs_assembler_assemble(
                 break;
 
               case CS_ASM_STATE_STRUP:
-                if (sscanf(buffer, "%x %x", &arg0, &arg1) != 2) {
+                if (sscanf(buffer, "%d %d", &arg0, &arg1) != 2) {
                   cs_error("%zu:%zu: wrong number of operands for strup\n",
                     line, col);
                   cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
@@ -278,7 +278,7 @@ CsByteChunk* cs_assembler_assemble(
                 break;
 
               case CS_ASM_STATE_PUTS:
-                if (sscanf(buffer, "%x", &arg0) != 1) {
+                if (sscanf(buffer, "%d", &arg0) != 1) {
                   cs_error("%zu:%zu: wrong number of operands for puts\n",
                     line, col);
                   cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
@@ -291,7 +291,7 @@ CsByteChunk* cs_assembler_assemble(
                 break;
 
               case CS_ASM_STATE_NEW:
-                if (sscanf(buffer, "%x %x", &arg0, &arg1) != 2) {
+                if (sscanf(buffer, "%d %d", &arg0, &arg1) != 2) {
                   cs_error("%zu:%zu: wrong number of operands for new\n",
                     line, col);
                   cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
@@ -304,7 +304,7 @@ CsByteChunk* cs_assembler_assemble(
                 break;
 
               case CS_ASM_STATE_ADD:
-                if (sscanf(buffer, "%x %x %x", &arg0, &arg1, &arg2) != 3) {
+                if (sscanf(buffer, "%d %d %d", &arg0, &arg1, &arg2) != 3) {
                   cs_error("%zu:%zu: wrong number of operands for add\n",
                     line, col);
                   cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
@@ -317,7 +317,7 @@ CsByteChunk* cs_assembler_assemble(
                 break;
 
               case CS_ASM_STATE_SUB:
-                if (sscanf(buffer, "%x %x %x", &arg0, &arg1, &arg2) != 3) {
+                if (sscanf(buffer, "%d %d %d", &arg0, &arg1, &arg2) != 3) {
                   cs_error("%zu:%zu: wrong number of operands for sub\n",
                     line, col);
                   cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
@@ -330,7 +330,7 @@ CsByteChunk* cs_assembler_assemble(
                 break;
 
               case CS_ASM_STATE_MUL:
-                if (sscanf(buffer, "%x %x %x", &arg0, &arg1, &arg2) != 3) {
+                if (sscanf(buffer, "%d %d %d", &arg0, &arg1, &arg2) != 3) {
                   cs_error("%zu:%zu: wrong number of operands for mul\n",
                     line, col);
                   cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
@@ -343,7 +343,7 @@ CsByteChunk* cs_assembler_assemble(
                 break;
 
               case CS_ASM_STATE_DIV:
-                if (sscanf(buffer, "%x %x %x", &arg0, &arg1, &arg2) != 3) {
+                if (sscanf(buffer, "%d %d %d", &arg0, &arg1, &arg2) != 3) {
                   cs_error("%zu:%zu: wrong number of operands for div\n",
                     line, col);
                   cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
@@ -356,7 +356,7 @@ CsByteChunk* cs_assembler_assemble(
                 break;
 
               case CS_ASM_STATE_MOD:
-                if (sscanf(buffer, "%x %x %x", &arg0, &arg1, &arg2) != 3) {
+                if (sscanf(buffer, "%d %d %d", &arg0, &arg1, &arg2) != 3) {
                   cs_error("%zu:%zu: wrong number of operands for mod\n",
                     line, col);
                   cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
@@ -369,7 +369,7 @@ CsByteChunk* cs_assembler_assemble(
                 break;
 
               case CS_ASM_STATE_POW:
-                if (sscanf(buffer, "%x %x %x", &arg0, &arg1, &arg2) != 3) {
+                if (sscanf(buffer, "%d %d %d", &arg0, &arg1, &arg2) != 3) {
                   cs_error("%zu:%zu: wrong number of operands for pow\n",
                     line, col);
                   cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
@@ -382,7 +382,7 @@ CsByteChunk* cs_assembler_assemble(
                 break;
 
               case CS_ASM_STATE_NEG:
-                if (sscanf(buffer, "%x %x", &arg0, &arg1) != 2) {
+                if (sscanf(buffer, "%d %d", &arg0, &arg1) != 2) {
                   cs_error("%zu:%zu: wrong number of operands for neg\n",
                     line, col);
                   cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
@@ -395,7 +395,7 @@ CsByteChunk* cs_assembler_assemble(
                 break;
 
               case CS_ASM_STATE_AND:
-                if (sscanf(buffer, "%x %x %x", &arg0, &arg1, &arg2) != 3) {
+                if (sscanf(buffer, "%d %d %d", &arg0, &arg1, &arg2) != 3) {
                   cs_error("%zu:%zu: wrong number of operands for and\n",
                     line, col);
                   cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
@@ -408,7 +408,7 @@ CsByteChunk* cs_assembler_assemble(
                 break;
 
               case CS_ASM_STATE_OR:
-                if (sscanf(buffer, "%x %x %x", &arg0, &arg1, &arg2) != 3) {
+                if (sscanf(buffer, "%d %d %d", &arg0, &arg1, &arg2) != 3) {
                   cs_error("%zu:%zu: wrong number of operands for or\n",
                     line, col);
                   cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
@@ -421,7 +421,7 @@ CsByteChunk* cs_assembler_assemble(
                 break;
 
               case CS_ASM_STATE_XOR:
-                if (sscanf(buffer, "%x %x %x", &arg0, &arg1, &arg2) != 3) {
+                if (sscanf(buffer, "%d %d %d", &arg0, &arg1, &arg2) != 3) {
                   cs_error("%zu:%zu: wrong number of operands for xor\n",
                     line, col);
                   cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
@@ -434,7 +434,7 @@ CsByteChunk* cs_assembler_assemble(
                 break;
 
               case CS_ASM_STATE_NOT:
-                if (sscanf(buffer, "%x %x", &arg0, &arg1) != 2) {
+                if (sscanf(buffer, "%d %d", &arg0, &arg1) != 2) {
                   cs_error("%zu:%zu: wrong number of operands for and\n",
                     line, col);
                   cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
@@ -447,7 +447,7 @@ CsByteChunk* cs_assembler_assemble(
                 break;
 
               case CS_ASM_STATE_SHL:
-                if (sscanf(buffer, "%x %x %x", &arg0, &arg1, &arg2) != 3) {
+                if (sscanf(buffer, "%d %d %d", &arg0, &arg1, &arg2) != 3) {
                   cs_error("%zu:%zu: wrong number of operands for shl\n",
                     line, col);
                   cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
@@ -460,7 +460,7 @@ CsByteChunk* cs_assembler_assemble(
                 break;
 
               case CS_ASM_STATE_SHR:
-                if (sscanf(buffer, "%x %x %x", &arg0, &arg1, &arg2) != 3) {
+                if (sscanf(buffer, "%d %d %d", &arg0, &arg1, &arg2) != 3) {
                   cs_error("%zu:%zu: wrong number of operands for shr\n",
                     line, col);
                   cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
@@ -473,7 +473,7 @@ CsByteChunk* cs_assembler_assemble(
                 break;
 
               case CS_ASM_STATE_JMP:
-                if (sscanf(buffer, "%x", &arg0) != 1) {
+                if (sscanf(buffer, "%d", &arg0) != 1) {
                   cs_error("%zu:%zu: wrong number of operands for jmp\n",
                     line, col);
                   cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
@@ -486,7 +486,7 @@ CsByteChunk* cs_assembler_assemble(
                 break;
 
               case CS_ASM_STATE_IF:
-                if (sscanf(buffer, "%x %x", &arg0, &arg1) != 2) {
+                if (sscanf(buffer, "%d %d", &arg0, &arg1) != 2) {
                   cs_error("%zu:%zu: wrong number of operands for if\n",
                     line, col);
                   cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
@@ -499,7 +499,7 @@ CsByteChunk* cs_assembler_assemble(
                 break;
 
               case CS_ASM_STATE_LT:
-                if (sscanf(buffer, "%x %x %x", &arg0, &arg1, &arg2) != 3) {
+                if (sscanf(buffer, "%d %d %d", &arg0, &arg1, &arg2) != 3) {
                   cs_error("%zu:%zu: wrong number of operands for lt\n",
                     line, col);
                   cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
@@ -512,7 +512,7 @@ CsByteChunk* cs_assembler_assemble(
                 break;
 
               case CS_ASM_STATE_LE:
-                if (sscanf(buffer, "%x %x %x", &arg0, &arg1, &arg2) != 3) {
+                if (sscanf(buffer, "%d %d %d", &arg0, &arg1, &arg2) != 3) {
                   cs_error("%zu:%zu: wrong number of operands for le\n",
                     line, col);
                   cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
@@ -525,7 +525,7 @@ CsByteChunk* cs_assembler_assemble(
                 break;
 
               case CS_ASM_STATE_EQ:
-                if (sscanf(buffer, "%x %x %x", &arg0, &arg1, &arg2) != 3) {
+                if (sscanf(buffer, "%d %d %d", &arg0, &arg1, &arg2) != 3) {
                   cs_error("%zu:%zu: wrong number of operands for eq\n",
                     line, col);
                   cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
@@ -538,7 +538,7 @@ CsByteChunk* cs_assembler_assemble(
                 break;
 
               case CS_ASM_STATE_CLOS:
-                if (sscanf(buffer, "%x %x", &arg0, &arg1) != 2) {
+                if (sscanf(buffer, "%d %d", &arg0, &arg1) != 2) {
                   cs_error("%zu:%zu: wrong number of operands for clos\n",
                     line, col);
                   cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
@@ -551,7 +551,7 @@ CsByteChunk* cs_assembler_assemble(
                 break;
 
               case CS_ASM_STATE_CPYUP:
-                if (sscanf(buffer, "%x %x %x", &arg0, &arg1, &arg2) != 3) {
+                if (sscanf(buffer, "%d %d %d", &arg0, &arg1, &arg2) != 3) {
                   cs_error("%zu:%zu: wrong number of operands for cpyup\n",
                     line, col);
                   cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
@@ -564,7 +564,7 @@ CsByteChunk* cs_assembler_assemble(
                 break;
 
               case CS_ASM_STATE_MOVUP:
-                if (sscanf(buffer, "%x %x %x", &arg0, &arg1, &arg2) != 3) {
+                if (sscanf(buffer, "%d %d %d", &arg0, &arg1, &arg2) != 3) {
                   cs_error("%zu:%zu: wrong number of operands for movup\n",
                     line, col);
                   cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
@@ -577,7 +577,7 @@ CsByteChunk* cs_assembler_assemble(
                 break;
 
               case CS_ASM_STATE_CALL:
-                if (sscanf(buffer, "%x %x %x", &arg0, &arg1, &arg2) != 3) {
+                if (sscanf(buffer, "%d %d %d", &arg0, &arg1, &arg2) != 3) {
                   cs_error("%zu:%zu: wrong number of operands for call\n",
                     line, col);
                   cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
@@ -590,7 +590,7 @@ CsByteChunk* cs_assembler_assemble(
                 break;
 
               case CS_ASM_STATE_RET:
-                if (sscanf(buffer, "%x %x", &arg0, &arg1) != 2) {
+                if (sscanf(buffer, "%d %d", &arg0, &arg1) != 2) {
                   cs_error("%zu:%zu: wrong number of operands for ret\n",
                     line, col);
                   cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
@@ -603,7 +603,7 @@ CsByteChunk* cs_assembler_assemble(
                 break;
 
               case CS_ASM_STATE_SPWN:
-                if (sscanf(buffer, "%x %x", &arg0, &arg1) != 2) {
+                if (sscanf(buffer, "%d %d", &arg0, &arg1) != 2) {
                   cs_error("%zu:%zu: wrong number of operands for spwn\n",
                     line, col);
                   cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
@@ -616,7 +616,7 @@ CsByteChunk* cs_assembler_assemble(
                 break;
 
               case CS_ASM_STATE_SEND:
-                if (sscanf(buffer, "%x %x", &arg0, &arg1) != 2) {
+                if (sscanf(buffer, "%d %d", &arg0, &arg1) != 2) {
                   cs_error("%zu:%zu: wrong number of operands for send\n",
                     line, col);
                   cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
@@ -629,7 +629,7 @@ CsByteChunk* cs_assembler_assemble(
                 break;
 
               case CS_ASM_STATE_RECV:
-                if (sscanf(buffer, "%x %x", &arg0, &arg1) != 2) {
+                if (sscanf(buffer, "%d %d", &arg0, &arg1) != 2) {
                   cs_error("%zu:%zu: wrong number of operands for recv\n",
                     line, col);
                   cs_exit(CS_REASON_ASSEMBLY_MALFORMED);

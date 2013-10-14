@@ -17,7 +17,7 @@ typedef struct CsValueStruct {
     double real;
     struct {
       size_t size;
-      char* string;
+      const char* string;
     };
   };
 } CsValueStruct;
@@ -36,6 +36,6 @@ extern CsValue CS_NIL;
 #define cs_value_fromint(i) ((CsValue) (((intptr_t) i) << 0x1))
 
 #define cs_value_toreal(value) ((double) value->real)
-#define cs_value_tostring(value) ((double) value->string)
+#define cs_value_tostring(value) ((const char*) value->string)
 
 #endif /* _CS_VALUE_H_ */
