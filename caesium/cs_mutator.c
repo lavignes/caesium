@@ -31,28 +31,38 @@ void cs_mutator_start(
     cs_exit(CS_REASON_THRDFATAL);
 }
 
-void cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
-  CsByteFunction* entry = chunk->entry;
+static CsStackFrame* create_stack_frame(CsByteFunction* func) {
   CsStackFrame* frame = malloc(sizeof(CsStackFrame) + sizeof(CsValue)
-    * (entry->nparams + entry->nupvals + entry->nstacks));
+    * (func->nparams + func->nupvals + func->nstacks));
   if (cs_unlikely(frame == NULL))
     cs_exit(CS_REASON_NOMEM);
-  frame->params = (CsValue*) frame + sizeof(CsStackFrame);
-  frame->upvals = (CsValue*) frame->params + sizeof(CsValue) * entry->nparams;
-  frame->stacks = (CsValue*) frame->upvals + sizeof(CsValue) * entry->nupvals;
 
-  frame->cur_func = entry;
+  frame->params = (CsValue*) frame + sizeof(CsStackFrame);
+  frame->upvals = (CsValue*) frame->params + sizeof(CsValue) * func->nparams;
+  frame->stacks = (CsValue*) frame->upvals + sizeof(CsValue) * func->nupvals;
+
+  frame->cur_func = func;
   frame->pc = 0;
+
+  frame->ncodes = func->codes->length;
+  frame->codes = (uintptr_t*) func->codes->buckets;
+
+  return frame;
+}
+
+void cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
+  CsStackFrame* frame = create_stack_frame(chunk->entry);
   CsByteConst* konst;
   int a, b;
-  for (frame->pc = 0; frame->pc < frame->cur_func->codes->length; frame->pc++) {
-    CsOpcode code = (CsOpcode) entry->codes->buckets[frame->pc];
+
+  for (frame->pc = 0; frame->pc < frame->ncodes; frame->pc++) {
+    CsByteCode code = frame->codes[frame->pc];
     switch (code) {
       case CS_OPCODE_LOADK:
         a = cs_bytecode_get_a(code);
         b = cs_bytecode_get_b(code);
         frame->stacks[a] = malloc(sizeof(CsValueStruct));
-        konst = entry->consts->buckets[b];
+        konst = frame->cur_func->consts->buckets[b];
         frame->stacks[a]->type = CS_VALUE_STRING;
         frame->stacks[a]->size = konst->size;
         frame->stacks[a]->string = konst->string;
@@ -64,7 +74,7 @@ void cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
         break;
 
       default:
-        //cs_exit(CS_REASON_UNIMPLEMENTED);
+        cs_exit(CS_REASON_UNIMPLEMENTED);
         break;
     }
   }

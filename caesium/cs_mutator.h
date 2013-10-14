@@ -26,6 +26,8 @@ typedef struct CsStackFrame {
 
   CsByteFunction* cur_func;
   size_t pc;
+  uintptr_t* codes;
+  size_t ncodes;
   CsValue* params;
   CsValue* upvals;
   CsValue* stacks;
