@@ -76,6 +76,7 @@ CsByteChunk* cs_assembler_assemble(
   uint32_t instruction;
   int arg0, arg1, arg2;
   double karg;
+  char ksarg[16];
   long start, end;
   char* buffer;
   bool new_line;
@@ -150,16 +151,33 @@ CsByteChunk* cs_assembler_assemble(
                 break;
 
               case CS_ASM_STATE_CONSTN:
-                sscanf(buffer, "%lf", &karg);
                 konst = cs_alloc_object(CsByteConst);
                 if (cs_unlikely(konst == NULL))
                   cs_exit(CS_REASON_NOMEM);
-                if (floor(karg) == karg) {
-                  konst->type = CS_CONST_TYPE_INT;
-                  konst->integer = karg;
+                if (sscanf(buffer, "%lf", &karg) == 1) {
+                  if (floor(karg) == karg) {
+                    konst->type = CS_CONST_TYPE_INT;
+                    konst->integer = karg;
+                  } else {
+                    konst->type = CS_CONST_TYPE_REAL;
+                    konst->real = karg;
+                  }
+                } else if (sscanf(buffer, "%s", ksarg) == 1) {
+                  if (strncmp(ksarg, "nil", 16) == 0) {
+                    konst->type = CS_CONST_TYPE_NIL;
+                  } else if (strncmp(ksarg, "true", 16) == 0) {
+                    konst->type = CS_CONST_TYPE_TRUE;
+                  } else if (strncmp(ksarg, "false", 16) == 0) {
+                    konst->type = CS_CONST_TYPE_FALSE;
+                  } else {
+                    cs_error("%zu:%zu: unrecognized constant: '%s'\n",
+                      line, col, ksarg);
+                    cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
+                  }
                 } else {
-                  konst->type = CS_CONST_TYPE_REAL;
-                  konst->real = karg;
+                  cs_error("%zu:%zu: unrecognized constant: '%s'\n",
+                    line, col, buffer);
+                  cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
                 }
                 // append const to consts list
                 cur_func = cs_list_peek_back(fstack);
