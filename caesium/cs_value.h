@@ -12,13 +12,18 @@ typedef enum CsValueType {
 } CsValueType;
 
 typedef struct CsValueStruct {
-  CsValueType type;
   union {
-    double real;
     struct {
-      size_t size;
-      const char* string;
+      CsValueType type;
+      union {
+        double real;
+        struct {
+          size_t size;
+          const char* string;
+        };
+      };
     };
+    uint8_t padding[32];
   };
 } CsValueStruct;
 
@@ -37,5 +42,9 @@ extern CsValue CS_NIL;
 
 #define cs_value_toreal(value) ((double) value->real)
 #define cs_value_tostring(value) ((const char*) value->string)
+
+#define cs_value_getpage(value) (((uintptr_t) value) & ~((uintptr_t) 0x3FFF))
+#define cs_value_getbits(value, nursery) \
+  ((((uintptr_t) value) - ((uintptr_t) nursery)) >> 0x5)
 
 #endif /* _CS_VALUE_H_ */

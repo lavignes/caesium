@@ -19,6 +19,7 @@ typedef struct CsMutator {
   CsValue error_register;
 
   CsList* stack;
+  CsList* nursery;
 
 } CsMutator;
 
@@ -33,6 +34,15 @@ typedef struct CsStackFrame {
   CsValue* stacks;
 
 } CsStackFrame;
+
+typedef struct CsNurseryPage {
+
+  uint8_t bitmaps[496];
+  uint64_t nvalues;
+  uint64_t padding;
+  CsValueStruct values[496];
+
+} CsNurseryPage;
 
 CsMutator* cs_mutator_new(CsRuntime* cs);
 

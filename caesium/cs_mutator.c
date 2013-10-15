@@ -1,3 +1,5 @@
+#include <malloc.h>
+
 #include "cs_mutator.h"
 
 static int mut_main(void* data) {
@@ -13,6 +15,13 @@ CsMutator* cs_mutator_new(CsRuntime* cs) {
   mut->cs = cs;
   mut->error_stack = cs_list_new();
   mut->stack = cs_list_new();
+
+  mut->nursery = cs_list_new();
+
+  // Allocate initial nursery
+  CsNurseryPage* page = memalign(sizeof(CsValueStruct), 16384);
+  cs_list_push_back(mut->nursery, page);
+
   return mut;
 }
 
@@ -95,6 +104,7 @@ void cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
 
           case CS_CONST_TYPE_STRING:
             frame->stacks[a] = malloc(sizeof(CsValueStruct));
+            memset(frame->stacks[a], 0, sizeof(CsValueStruct));
             frame->stacks[a]->type = CS_VALUE_STRING;
             frame->stacks[a]->size = konst->size;
             frame->stacks[a]->string = konst->string;

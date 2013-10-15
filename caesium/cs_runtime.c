@@ -2,11 +2,16 @@
 #include "cs_mutator.h"
 #include "cs_lexer.h"
 #include "cs_assembler.h"
+#include "cs_value.h"
 
 extern void setup_assembler();
 extern void shutdown_assembler();
 
 CsRuntime* cs_runtime_new() {
+  // These truths we hold to be self-evident
+  cs_assert(sizeof(CsNurseryPage) == 16384);
+  cs_assert(sizeof(CsValueStruct) == 32);
+
   CsRuntime* cs = cs_alloc_object(CsRuntime);
   if (cs_unlikely(cs == NULL))
     cs_exit(CS_REASON_NOMEM);
