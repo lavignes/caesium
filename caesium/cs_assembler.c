@@ -1,5 +1,3 @@
-#include <math.h>
-
 #include "cs_common.h"
 #include "cs_assembler.h"
 #include "cs_unicode.h"
@@ -75,7 +73,8 @@ CsByteChunk* cs_assembler_assemble(
 {
   uint32_t instruction;
   int arg0, arg1, arg2;
-  double karg;
+  double kdarg;
+  intptr_t kiarg;
   char ksarg[16];
   long start = 0, end = 0;
   char* buffer;
@@ -154,14 +153,13 @@ CsByteChunk* cs_assembler_assemble(
                 konst = cs_alloc_object(CsByteConst);
                 if (cs_unlikely(konst == NULL))
                   cs_exit(CS_REASON_NOMEM);
-                if (sscanf(buffer, "%lf", &karg) == 1) {
-                  if (floor(karg) == karg) {
-                    konst->type = CS_CONST_TYPE_INT;
-                    konst->integer = karg;
-                  } else {
-                    konst->type = CS_CONST_TYPE_REAL;
-                    konst->real = karg;
-                  }
+                if (strchr(buffer, '.') != NULL
+                    && sscanf(buffer, "%lf", &kdarg) == 1) {
+                  konst->type = CS_CONST_TYPE_REAL;
+                  konst->real = kdarg;
+                } else if (sscanf(buffer, "%"SCNiPTR, &kiarg) == 1) {
+                  konst->type = CS_CONST_TYPE_INT;
+                  konst->integer = kiarg;
                 } else if (sscanf(buffer, "%s", ksarg) == 1) {
                   if (strncmp(ksarg, "nil", 16) == 0) {
                     konst->type = CS_CONST_TYPE_NIL;
@@ -811,6 +809,8 @@ CsByteChunk* cs_assembler_assemble(
           case CS_ASM_STATE_COMMENT:
           case CS_ASM_STATE_CONSTS:
           case CS_ASM_STATE_CONSTN:
+          case CS_ASM_STATE_ARGS:
+          case CS_ASM_STATE_ARGS_READ:
             break;
 
           case CS_ASM_STATE_INIT:

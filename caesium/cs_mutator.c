@@ -37,7 +37,8 @@ static CsStackFrame* create_stack_frame(CsByteFunction* func) {
   if (cs_unlikely(frame == NULL))
     cs_exit(CS_REASON_NOMEM);
 
-  frame->params = (void*) frame + sizeof(CsStackFrame);
+  // Cast frame to void* to prevent heap corruption
+  frame->params = ((void*) frame) + sizeof(CsStackFrame);
   frame->upvals = &frame->params[func->nparams];
   frame->stacks = &frame->upvals[func->nupvals];
 
