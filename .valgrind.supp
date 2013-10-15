@@ -1,0 +1,9 @@
+{
+   int_swizzling
+   Memcheck:Addr8
+   fun:cs_mutator_exec
+   fun:entry
+   fun:mut_main
+   fun:_thrd_wrapper_function
+   fun:start_thread
+}
