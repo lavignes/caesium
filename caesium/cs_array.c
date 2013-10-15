@@ -1,6 +1,7 @@
 #include "cs_array.h"
 
 static void array_grow(CsArray* arr) {
+  cs_debug("array doubling\n");
   size_t i;
   arr->size *= 2;
   arr->buckets = realloc(arr->buckets, sizeof(void*) * arr->size);

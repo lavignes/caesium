@@ -77,7 +77,7 @@ CsByteChunk* cs_assembler_assemble(
   int arg0, arg1, arg2;
   double karg;
   char ksarg[16];
-  long start, end;
+  long start = 0, end = 0;
   char* buffer;
   bool new_line;
   bool new_comment;
@@ -86,7 +86,7 @@ CsByteChunk* cs_assembler_assemble(
   CsPair* pair;
   CsPseudoOp pop;
   CsOpcode op;
-  CsByteFunction *func, *cur_func;
+  CsByteFunction *func = NULL, *cur_func;
   CsByteConst* konst;
   CsList* stack = cs_list_new();
   CsList* fstack = cs_list_new(); // stack of in-progress function blocks

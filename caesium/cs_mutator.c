@@ -37,9 +37,9 @@ static CsStackFrame* create_stack_frame(CsByteFunction* func) {
   if (cs_unlikely(frame == NULL))
     cs_exit(CS_REASON_NOMEM);
 
-  frame->params = (CsValue*) frame + sizeof(CsStackFrame);
-  frame->upvals = (CsValue*) frame->params + sizeof(CsValue) * func->nparams;
-  frame->stacks = (CsValue*) frame->upvals + sizeof(CsValue) * func->nupvals;
+  frame->params = (void*) frame + sizeof(CsStackFrame);
+  frame->upvals = &frame->params[func->nparams];
+  frame->stacks = &frame->upvals[func->nupvals];
 
   frame->cur_func = func;
   frame->pc = 0;
@@ -54,7 +54,7 @@ void cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
   CsStackFrame* frame = create_stack_frame(chunk->entry);
   CsByteConst* konst;
   CsPair* pair;
-  int a, b;
+  int a, b, c;
 
   for (frame->pc = 0; frame->pc < frame->ncodes; frame->pc++) {
     CsByteCode code = frame->codes[frame->pc];
@@ -156,6 +156,13 @@ void cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
             break;
         }
         break;
+
+        case CS_OPCODE_ADD:
+          a = cs_bytecode_get_a(code);
+          b = cs_bytecode_get_b(code);
+          c = cs_bytecode_get_c(code);
+          frame->stacks[a] = cs_value_fromint(cs_value_toint(frame->stacks[b]) + cs_value_toint(frame->stacks[c]));
+          break;
 
         case CS_OPCODE_RET:
           break;
