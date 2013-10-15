@@ -58,7 +58,7 @@ void cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
 
   for (frame->pc = 0; frame->pc < frame->ncodes; frame->pc++) {
     CsByteCode code = frame->codes[frame->pc];
-    switch (code) {
+    switch (cs_bytecode_get_opcode(code)) {
       case CS_OPCODE_MOVE:
         a = cs_bytecode_get_a(code);
         b = cs_bytecode_get_b(code);
@@ -68,11 +68,37 @@ void cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
       case CS_OPCODE_LOADK:
         a = cs_bytecode_get_a(code);
         b = cs_bytecode_get_b(code);
-        frame->stacks[a] = malloc(sizeof(CsValueStruct));
         konst = frame->cur_func->consts->buckets[b];
-        frame->stacks[a]->type = CS_VALUE_STRING;
-        frame->stacks[a]->size = konst->size;
-        frame->stacks[a]->string = konst->string;
+        switch (konst->type) {
+          case CS_CONST_TYPE_NIL:
+            frame->stacks[a] = CS_NIL;
+            break;
+
+          case CS_CONST_TYPE_TRUE:
+            frame->stacks[a] = CS_TRUE;
+            break;
+
+          case CS_CONST_TYPE_FALSE:
+            frame->stacks[a] = CS_FALSE;
+            break;
+
+          case CS_CONST_TYPE_INT:
+            frame->stacks[a] = cs_value_fromint(konst->integer);
+            break;
+
+          case CS_CONST_TYPE_REAL:
+            frame->stacks[a] = malloc(sizeof(CsValueStruct));
+            frame->stacks[a]->type = CS_VALUE_REAL;
+            frame->stacks[a]->real = konst->real;
+            break;
+
+          case CS_CONST_TYPE_STRING:
+            frame->stacks[a] = malloc(sizeof(CsValueStruct));
+            frame->stacks[a]->type = CS_VALUE_STRING;
+            frame->stacks[a]->size = konst->size;
+            frame->stacks[a]->string = konst->string;
+            break;
+        }
         break;
         
       case CS_OPCODE_LOADG:
@@ -104,8 +130,35 @@ void cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
 
       case CS_OPCODE_PUTS:
         a = cs_bytecode_get_a(code);
-        printf("%s\n", frame->stacks[a]->string);
+        if (cs_value_isint(frame->stacks[a])) {
+          printf("%"PRIiPTR"\n", cs_value_toint(frame->stacks[a]));
+          break;
+        }
+        switch (frame->stacks[a]->type) {
+          case CS_VALUE_NIL:
+            printf("nil\n");
+            break;
+
+          case CS_VALUE_TRUE:
+            printf("true\n");
+            break;
+
+          case CS_VALUE_FALSE:
+            printf("false\n");
+            break;
+
+          case CS_VALUE_REAL:
+            printf("%g\n", cs_value_toreal(frame->stacks[a]));
+            break;
+
+          case CS_VALUE_STRING:
+            printf("%s\n", cs_value_tostring(frame->stacks[a]));
+            break;
+        }
         break;
+
+        case CS_OPCODE_RET:
+          break;
 
       default:
         cs_exit(CS_REASON_UNIMPLEMENTED);

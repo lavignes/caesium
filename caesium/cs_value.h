@@ -33,7 +33,7 @@ extern CsValue CS_NIL;
 // test whether a value is an integer
 #define cs_value_isint(value) (((intptr_t) value) & 0x1)
 #define cs_value_toint(value) (((intptr_t) value) >> 0x1)
-#define cs_value_fromint(i) ((CsValue) (((intptr_t) i) << 0x1))
+#define cs_value_fromint(i) ((CsValue) ((((intptr_t) i) << 0x1) | 0x1))
 
 #define cs_value_toreal(value) ((double) value->real)
 #define cs_value_tostring(value) ((const char*) value->string)

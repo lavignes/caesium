@@ -1,9 +1,8 @@
-# Hello world in ATOMS
+# Hello World in ATOMS
+# PUS params upvals stacks
 .entry 0 0 1
-
-  .const  'Hello buuudy!'
-  loadk   0 0
-  puts    0
-  ret     0 1
-  
+  .const 'Hey buuudy'
+  loadk 0 0
+  puts 0
+  ret 0 1
 .end

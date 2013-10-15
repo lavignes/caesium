@@ -25,7 +25,7 @@ LEMON_GEN = $(addprefix $(CS_DIR)/, cs_lemon.c cs_lemon.h)
 all: caesium
 
 caesium: tinycthread xxhash $(LEMON_GEN) $(CS_DIR)/cs_lemon.o $(CS_OBJS)
-	$(CC) $(LDFLAGS) -o $(BIN_DIR)/caesium $(CS_OBJS) -lxxhash -ltinycthread -lpthread -lrt
+	$(CC) $(LDFLAGS) -o $(BIN_DIR)/caesium $(CS_OBJS) -lxxhash -ltinycthread -lpthread -lrt -lm
 
 tinycthread: $(LIB_DIR)/libtinycthread.a
 $(LIB_DIR)/libtinycthread.a: $(TINYC_OBJS)

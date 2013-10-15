@@ -83,6 +83,9 @@ typedef uint32_t CsByteCode;
 #define CS_NUPVALS_MAX 60 
 
 typedef enum CsByteConstType {
+  CS_CONST_TYPE_NIL,
+  CS_CONST_TYPE_TRUE,
+  CS_CONST_TYPE_FALSE,
   CS_CONST_TYPE_INT,
   CS_CONST_TYPE_REAL,
   CS_CONST_TYPE_STRING,

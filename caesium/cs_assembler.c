@@ -1,3 +1,5 @@
+#include <math.h>
+
 #include "cs_common.h"
 #include "cs_assembler.h"
 #include "cs_unicode.h"
@@ -152,8 +154,13 @@ CsByteChunk* cs_assembler_assemble(
                 konst = cs_alloc_object(CsByteConst);
                 if (cs_unlikely(konst == NULL))
                   cs_exit(CS_REASON_NOMEM);
-                konst->type = CS_CONST_TYPE_REAL;
-                konst->real = karg;
+                if (floor(karg) == karg) {
+                  konst->type = CS_CONST_TYPE_INT;
+                  konst->integer = karg;
+                } else {
+                  konst->type = CS_CONST_TYPE_REAL;
+                  konst->real = karg;
+                }
                 // append const to consts list
                 cur_func = cs_list_peek_back(fstack);
                 cs_array_insert(cur_func->consts, -1, konst);
