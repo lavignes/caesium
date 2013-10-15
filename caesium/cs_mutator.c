@@ -19,7 +19,11 @@ CsMutator* cs_mutator_new(CsRuntime* cs) {
   mut->nursery = cs_list_new();
 
   // Allocate initial nursery
-  CsNurseryPage* page = memalign(sizeof(CsValueStruct), 16384);
+  CsNurseryPage* page = NULL;
+  if (cs_unlikely(posix_memalign((void**) &page,
+      sizeof(CsValueStruct), sizeof(CsValueStruct))))
+    cs_exit(CS_REASON_NOMEM);
+
   cs_list_push_back(mut->nursery, page);
 
   return mut;
