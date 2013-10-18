@@ -25,7 +25,7 @@ typedef struct CsMutator {
 
 } CsMutator;
 
-typedef struct CsStackFrame {
+typedef struct CsClosure {
 
   CsByteFunction* cur_func;
   size_t pc;
@@ -35,7 +35,7 @@ typedef struct CsStackFrame {
   CsValue* upvals;
   CsValue* stacks;
 
-} CsStackFrame;
+} CsClosure;
 
 CsValue cs_mutator_new_string(
   CsMutator* mut,

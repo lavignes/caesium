@@ -69,11 +69,15 @@ void cs_runtime_dostring(CsRuntime* cs, const char* u8str) {
 void cs_runtime_doassembly(CsRuntime* cs, const char* u8str, size_t size) {
   CsMutator* mut0 = cs_mutator_new(cs);
   cs_list_push_back(cs->mutators, mut0);
+
   CsAssembler* assembler = cs_assembler_new();
   CsByteChunk* chunk = cs_assembler_assemble(assembler, u8str, size);
   cs_assembler_free(assembler);
+
   cs_mutator_start(mut0, (int (*)(CsMutator*, void*)) cs_mutator_exec, chunk);
+
   if (thrd_join(mut0->thread, NULL) != thrd_success)
     cs_exit(CS_REASON_THRDFATAL);
+
   cs_bytechunk_free(chunk);
 }

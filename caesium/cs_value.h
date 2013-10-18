@@ -37,8 +37,6 @@ extern CsValue CS_TRUE;
 extern CsValue CS_FALSE;
 extern CsValue CS_NIL;
 
-#define cs_value_get_type(value) (value->type)
-
 // test whether a value is an integer
 #define cs_value_isint(value) (((intptr_t) value) & 0x1)
 #define cs_value_toint(value) (((intptr_t) value) >> 0x1)

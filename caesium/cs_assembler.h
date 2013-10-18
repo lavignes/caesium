@@ -14,6 +14,7 @@ typedef enum CsAsmState {
   CS_ASM_STATE_OP,
   CS_ASM_STATE_ENTRY,
   CS_ASM_STATE_FUNC,
+  CS_ASM_STATE_RESQ,
   CS_ASM_STATE_CONSTN,   // Const number
   CS_ASM_STATE_CONSTS,   // Const string
   CS_ASM_STATE_ARGS,
@@ -53,6 +54,7 @@ typedef enum CsAsmState {
   CS_ASM_STATE_CPYUP,
   CS_ASM_STATE_CALL,
   CS_ASM_STATE_RET,
+  CS_ASM_STATE_RAISE,
   CS_ASM_STATE_SPWN,
   CS_ASM_STATE_SEND,
   CS_ASM_STATE_RECV,
@@ -66,6 +68,7 @@ typedef enum CsPseudoOp {
   CS_PSEUDO_FUNC,
   CS_PSEUDO_CONST,
   CS_PSEUDO_END,
+  CS_PSEUDO_RESQ,
 } CsPseudoOp;
 
 CsAssembler* cs_assembler_new();

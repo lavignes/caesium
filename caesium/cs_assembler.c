@@ -17,6 +17,7 @@ void setup_assembler() {
   cs_hash_insert(assembler_pseudo_ops, "func", 4, (void*) CS_PSEUDO_FUNC);
   cs_hash_insert(assembler_pseudo_ops, "const", 5, (void*) CS_PSEUDO_CONST);
   cs_hash_insert(assembler_pseudo_ops, "end", 3, (void*) CS_PSEUDO_END);
+  cs_hash_insert(assembler_pseudo_ops, "resq", 4, (void*) CS_PSEUDO_RESQ);
 
   cs_hash_insert(assembler_ops, "move", 4, (void*) CS_OPCODE_MOVE);
   cs_hash_insert(assembler_ops, "loadk", 5, (void*) CS_OPCODE_LOADK);
@@ -51,6 +52,7 @@ void setup_assembler() {
   cs_hash_insert(assembler_ops, "movup", 5, (void*) CS_OPCODE_MOVUP);
   cs_hash_insert(assembler_ops, "call", 4, (void*) CS_OPCODE_CALL);
   cs_hash_insert(assembler_ops, "ret", 3, (void*) CS_OPCODE_RET);
+  cs_hash_insert(assembler_ops, "raise", 5, (void*) CS_OPCODE_RAISE);
   cs_hash_insert(assembler_ops, "spwn", 4, (void*) CS_OPCODE_SPWN);
   cs_hash_insert(assembler_ops, "send", 4, (void*) CS_OPCODE_SEND);
   cs_hash_insert(assembler_ops, "recv", 4, (void*) CS_OPCODE_RECV);
@@ -624,6 +626,19 @@ CsByteChunk* cs_assembler_assemble(
                 }
                 instruction =
                   cs_bytecode_make_type1(CS_OPCODE_RET, arg0, arg1, 0);
+                cur_func = cs_list_peek_back(fstack);
+                cs_array_insert(cur_func->codes, -1,
+                  (void*) (uintptr_t) instruction);
+                break;
+
+              case CS_ASM_STATE_RAISE:
+                if (sscanf(buffer, "%d", &arg0) != 1) {
+                  cs_error("%zu:%zu: wrong number of operands for raise\n",
+                    line, col);
+                  cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
+                }
+                instruction =
+                  cs_bytecode_make_type3(CS_OPCODE_RAISE, 0, arg0);
                 cur_func = cs_list_peek_back(fstack);
                 cs_array_insert(cur_func->codes, -1,
                   (void*) (uintptr_t) instruction);

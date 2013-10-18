@@ -1,6 +1,7 @@
 #include <malloc.h>
 
 #include "cs_mutator.h"
+#include "cs_numeric.h"
 
 static int mut_main(void* data) {
   CsMutator* mut = data;
@@ -93,107 +94,118 @@ void cs_mutator_start(
     cs_exit(CS_REASON_THRDFATAL);
 }
 
-static CsStackFrame* create_stack_frame(CsByteFunction* func) {
-  CsStackFrame* frame = malloc(sizeof(CsStackFrame) + sizeof(CsValue)
+static CsClosure* create_stack_frame(CsByteFunction* func) {
+  CsClosure* closure = malloc(sizeof(CsClosure) + sizeof(CsValue)
     * (func->nparams + func->nupvals + func->nstacks));
-  if (cs_unlikely(frame == NULL))
+  if (cs_unlikely(closure == NULL))
     cs_exit(CS_REASON_NOMEM);
 
-  // Cast frame to void* to prevent heap corruption
-  frame->params = ((void*) frame) + sizeof(CsStackFrame);
-  frame->upvals = &frame->params[func->nparams];
-  frame->stacks = &frame->upvals[func->nupvals];
+  // Cast closure to void* to prevent heap corruption
+  closure->params = ((void*) closure) + sizeof(CsClosure);
+  closure->upvals = &closure->params[func->nparams];
+  closure->stacks = &closure->upvals[func->nupvals];
 
-  frame->cur_func = func;
-  frame->pc = 0;
+  closure->cur_func = func;
+  closure->pc = 0;
 
-  frame->ncodes = func->codes->length;
-  frame->codes = (uintptr_t*) func->codes->buckets;
+  closure->ncodes = func->codes->length;
+  closure->codes = (uintptr_t*) func->codes->buckets;
 
-  return frame;
+  return closure;
 }
 
+static CsValue loadk(CsMutator* mut, CsByteConst* konst) {
+  switch (konst->type) {
+    case CS_CONST_TYPE_NIL:
+      return CS_NIL;
+
+    case CS_CONST_TYPE_TRUE:
+      return CS_TRUE;
+
+    case CS_CONST_TYPE_FALSE:
+      return CS_FALSE;
+
+    case CS_CONST_TYPE_INT:
+      return cs_value_fromint(konst->integer);
+      break;
+
+    case CS_CONST_TYPE_REAL:
+      return cs_mutator_new_real(mut, konst->real);
+
+    case CS_CONST_TYPE_STRING:
+      return cs_mutator_new_string(mut, konst->string,
+        konst->hash, konst->size, konst->length);
+  }
+
+  return CS_NIL;
+}
+
+#define load_rk_value(r) (r > 255)? \
+  loadk(mut, closure->cur_func->consts->buckets[r - 256]) : closure->stacks[r]
+
 int cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
-  CsStackFrame* frame = create_stack_frame(chunk->entry);
   CsByteConst* konst;
   CsPair* pair;
+  CsValue bval, cval;
   int a, b, c;
 
-  for (frame->pc = 0; frame->pc < frame->ncodes; frame->pc++) {
-    CsByteCode code = frame->codes[frame->pc];
+  CsClosure* closure = create_stack_frame(chunk->entry);
+  cs_list_push_back(mut->stack, closure);
+
+  for (closure->pc = 0; closure->pc < closure->ncodes; closure->pc++) {
+    CsByteCode code = closure->codes[closure->pc];
     switch (cs_bytecode_get_opcode(code)) {
       case CS_OPCODE_MOVE:
         a = cs_bytecode_get_a(code);
         b = cs_bytecode_get_b(code);
-        frame->stacks[a] = frame->stacks[b];
+        if (b > 255) {
+          b = b - 256;
+          goto move_as_loadk;
+        }
+        closure->stacks[a] = closure->stacks[b];
         break;
 
       case CS_OPCODE_LOADK:
         a = cs_bytecode_get_a(code);
         b = cs_bytecode_get_b(code);
-        konst = frame->cur_func->consts->buckets[b];
-        switch (konst->type) {
-          case CS_CONST_TYPE_NIL:
-            frame->stacks[a] = CS_NIL;
-            break;
-
-          case CS_CONST_TYPE_TRUE:
-            frame->stacks[a] = CS_TRUE;
-            break;
-
-          case CS_CONST_TYPE_FALSE:
-            frame->stacks[a] = CS_FALSE;
-            break;
-
-          case CS_CONST_TYPE_INT:
-            frame->stacks[a] = cs_value_fromint(konst->integer);
-            break;
-
-          case CS_CONST_TYPE_REAL:
-            frame->stacks[a] = cs_mutator_new_real(mut, konst->real);
-            break;
-
-          case CS_CONST_TYPE_STRING:
-            frame->stacks[a] = cs_mutator_new_string(mut, konst->string,
-              konst->hash, konst->size, konst->length);
-            break;
-        }
+        move_as_loadk: closure->stacks[a] =
+          loadk(mut, closure->cur_func->consts->buckets[b]);
         break;
         
       case CS_OPCODE_LOADG:
         a = cs_bytecode_get_a(code);
         b = cs_bytecode_get_b(code);
-        konst = frame->cur_func->consts->buckets[b];
+        konst = closure->cur_func->consts->buckets[b];
         mtx_lock(&mut->cs->globals_lock);
         pair = cs_hash_find(mut->cs->globals, konst->string, konst->size);
         mtx_unlock(&mut->cs->globals_lock);
         if (cs_likely(pair != NULL))
-          frame->stacks[a] = pair->value;
+          closure->stacks[a] = pair->value;
         else
           // This should raise.... but just return NIL for now
-          frame->stacks[a] = CS_NIL;
+          closure->stacks[a] = CS_NIL;
         break;
 
       case CS_OPCODE_STORG:
         a = cs_bytecode_get_a(code);
         b = cs_bytecode_get_b(code);
-        konst = frame->cur_func->consts->buckets[b];
+        konst = closure->cur_func->consts->buckets[b];
         mtx_lock(&mut->cs->globals_lock);
         cs_hash_insert(
           mut->cs->globals,
           konst->string,
           konst->size,
-          frame->stacks[a]);
+          closure->stacks[a]);
         mtx_unlock(&mut->cs->globals_lock);
         break;
 
       case CS_OPCODE_PUTS:
         a = cs_bytecode_get_a(code);
-        if (cs_value_isint(frame->stacks[a])) {
-          printf("%"PRIiPTR"\n", cs_value_toint(frame->stacks[a]));
+        if (cs_value_isint(closure->stacks[a])) {
+          printf("%"PRIiPTR"\n", cs_value_toint(closure->stacks[a]));
           break;
         }
-        switch (frame->stacks[a]->type) {
+        switch (closure->stacks[a]->type) {
           case CS_VALUE_NIL:
             printf("nil\n");
             break;
@@ -207,11 +219,11 @@ int cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
             break;
 
           case CS_VALUE_REAL:
-            printf("%g\n", cs_value_toreal(frame->stacks[a]));
+            printf("%g\n", cs_value_toreal(closure->stacks[a]));
             break;
 
           case CS_VALUE_STRING:
-            printf("%s\n", cs_value_tostring(frame->stacks[a]));
+            printf("%s\n", cs_value_tostring(closure->stacks[a]));
             break;
         }
         break;
@@ -220,7 +232,23 @@ int cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
           a = cs_bytecode_get_a(code);
           b = cs_bytecode_get_b(code);
           c = cs_bytecode_get_c(code);
-          frame->stacks[a] = cs_value_fromint(cs_value_toint(frame->stacks[b]) + cs_value_toint(frame->stacks[c]));
+          // Read the args as konst or value
+          bval = load_rk_value(b);
+          cval = load_rk_value(c);
+          if (cs_value_isint(bval)) {
+            closure->stacks[a] = cs_int_add(mut, bval, cval);
+            break;
+          }
+          switch (bval->type) {
+            case CS_VALUE_REAL:
+              closure->stacks[a] = cs_real_add(mut, bval, cval);
+              break;
+
+            default:
+              cs_error("Trying to add bad type!\n");
+              closure->stacks[a] = CS_NIL;
+              break;
+          }
           break;
 
         case CS_OPCODE_RET:
@@ -232,6 +260,7 @@ int cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
     }
   }
 
-  cs_free_object(frame);
+  closure = cs_list_pop_back(mut->stack);
+  cs_free_object(closure);
   return 0;
 }

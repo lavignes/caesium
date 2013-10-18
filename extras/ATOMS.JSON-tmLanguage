@@ -20,7 +20,7 @@
     },
     {  
       "name": "keyword.control",
-      "match": "\\.(entry|const|func|end)\\b"
+      "match": "\\.(entry|const|func|end|resq)\\b"
     },
     {  
        "name": "constant.numeric",
