@@ -53,6 +53,7 @@ void cs_runtime_dofile(CsRuntime* cs, const char* filename) {
   fclose(input_file);
   //cs_runtime_dostring(cs, file_buffer);
   cs_runtime_doassembly(cs, file_buffer, file_size);
+  cs_free_object(file_buffer);
 }
 
 void cs_runtime_dostring(CsRuntime* cs, const char* u8str) {
@@ -65,31 +66,14 @@ void cs_runtime_dostring(CsRuntime* cs, const char* u8str) {
   // free((void*) u8str);
 }
 
-struct entrydata {
-  const char* u8str;
-  size_t size;
-};
-
-/*
-  Assembly-based mutator entry point
- */
-static int entry(CsMutator* mut, void* data) {
-  struct entrydata* edata = data;
-  CsAssembler* assembler = cs_assembler_new();
-  CsByteChunk* chunk =
-    cs_assembler_assemble(assembler, edata->u8str, edata->size);
-  cs_free_object((char*) edata->u8str);
-  cs_assembler_free(assembler);
-  cs_mutator_exec(mut, chunk);
-  cs_bytechunk_free(chunk);
-  return 0;
-}
-
 void cs_runtime_doassembly(CsRuntime* cs, const char* u8str, size_t size) {
   CsMutator* mut0 = cs_mutator_new(cs);
   cs_list_push_back(cs->mutators, mut0);
-  struct entrydata edata = {u8str, size};
-  cs_mutator_start(mut0, entry, &edata);
+  CsAssembler* assembler = cs_assembler_new();
+  CsByteChunk* chunk = cs_assembler_assemble(assembler, u8str, size);
+  cs_assembler_free(assembler);
+  cs_mutator_start(mut0, (int (*)(CsMutator*, void*)) cs_mutator_exec, chunk);
   if (thrd_join(mut0->thread, NULL) != thrd_success)
     cs_exit(CS_REASON_THRDFATAL);
+  cs_bytechunk_free(chunk);
 }

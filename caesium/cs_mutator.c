@@ -103,7 +103,7 @@ static CsStackFrame* create_stack_frame(CsByteFunction* func) {
   return frame;
 }
 
-void cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
+int cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
   CsStackFrame* frame = create_stack_frame(chunk->entry);
   CsByteConst* konst;
   CsPair* pair;
@@ -221,4 +221,5 @@ void cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
         break;
     }
   }
+  return 0;
 }

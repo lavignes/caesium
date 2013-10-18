@@ -55,6 +55,12 @@ void cs_mutator_start(
   int (*entry_point)(struct CsMutator*, void*),
   void* data);
 
-void cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk);
+/**
+ * Execute a bytecode chunk (default mutator entry point)
+ * @param mut   a mutator
+ * @param chunk a bytechunk
+ * @return thread return value
+ */
+int cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk);
 
 #endif /* _CS_MUTATOR_H_ */
