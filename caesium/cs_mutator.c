@@ -7,7 +7,25 @@ static int mut_main(void* data) {
   return mut->entry_point(mut, mut->data);
 }
 
+static CsValue cs_mutator_new_value(CsMutator* mut) {
+  CsValue value = cs_list_pop_front(mut->freelist);
+  if (value == NULL) {
+    cs_error("Haven't finished expanding the pages yet...\n");
+    cs_exit(CS_REASON_UNIMPLEMENTED);
+  }
+  return value;
+}
+
+CsValue cs_mutator_new_string(CsMutator* mut, const char* u8str, size_t size) {
+  CsValue value = cs_mutator_new_value(mut);
+  value->type = CS_VALUE_STRING;
+  value->string = u8str;
+  value->size = size;
+  return value;
+}
+
 CsMutator* cs_mutator_new(CsRuntime* cs) {
+  int i;
   CsMutator* mut = cs_alloc_object(CsMutator);
   if (cs_unlikely(mut == NULL))
     cs_exit(CS_REASON_NOMEM);
@@ -17,12 +35,14 @@ CsMutator* cs_mutator_new(CsRuntime* cs) {
   mut->stack = cs_list_new();
 
   mut->nursery = cs_list_new();
+  mut->freelist = cs_list_new();
 
   // Allocate initial nursery
-  CsNurseryPage* page = NULL;
-  if (cs_unlikely(posix_memalign((void**) &page,
-      sizeof(CsValueStruct), sizeof(CsValueStruct))))
-    cs_exit(CS_REASON_NOMEM);
+  CsNurseryPage* page = cs_nursery_new_page();
+  // fill the freelist
+  for (i = 0; i < CS_NURSERY_PAGE_MAX; i++) {
+    cs_list_push_back(mut->freelist, &page->values[i]);
+  }
 
   cs_list_push_back(mut->nursery, page);
 
@@ -107,11 +127,8 @@ void cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
             break;
 
           case CS_CONST_TYPE_STRING:
-            frame->stacks[a] = malloc(sizeof(CsValueStruct));
-            memset(frame->stacks[a], 0, sizeof(CsValueStruct));
-            frame->stacks[a]->type = CS_VALUE_STRING;
-            frame->stacks[a]->size = konst->size;
-            frame->stacks[a]->string = konst->string;
+            frame->stacks[a] =
+              cs_mutator_new_string(mut, konst->string, konst->size);
             break;
         }
         break;

@@ -3,6 +3,8 @@
 
 #include "cs_common.h"
 
+#define CS_VALUE_SIZE 32
+
 typedef enum CsValueType {
   CS_VALUE_NIL,
   CS_VALUE_TRUE,
@@ -15,6 +17,7 @@ typedef struct CsValueStruct {
   union {
     struct {
       CsValueType type;
+      uint32_t hash;
       union {
         double real;
         struct {

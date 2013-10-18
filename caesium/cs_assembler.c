@@ -1,3 +1,5 @@
+#include <xxhash.h>
+
 #include "cs_common.h"
 #include "cs_assembler.h"
 #include "cs_unicode.h"
@@ -190,6 +192,7 @@ CsByteChunk* cs_assembler_assemble(
                 // intercept the buffer
                 konst->string = buffer;
                 konst->size = strlen(buffer);
+                konst->hash = XXH32(buffer, konst->size, 0xdeadface);
                 buffer = NULL; // this prevents freeing the buffer
                 // append const to consts list
                 cur_func = cs_list_peek_back(fstack);

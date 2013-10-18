@@ -8,9 +8,9 @@ extern void setup_assembler();
 extern void shutdown_assembler();
 
 CsRuntime* cs_runtime_new() {
-  // These truths we hold to be self-evident
-  cs_assert(sizeof(CsNurseryPage) == 16384);
-  cs_assert(sizeof(CsValueStruct) == 32);
+  // We hold these truths to be self-evident
+  cs_assert(sizeof(CsNurseryPage) == CS_NURSERY_PAGE_SIZE);
+  cs_assert(sizeof(CsValueStruct) == CS_VALUE_SIZE);
 
   CsRuntime* cs = cs_alloc_object(CsRuntime);
   if (cs_unlikely(cs == NULL))

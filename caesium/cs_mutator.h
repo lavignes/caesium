@@ -6,6 +6,7 @@
 #include "cs_runtime.h"
 #include "cs_assembler.h"
 #include "cs_value.h"
+#include "cs_nursery.h"
 
 typedef struct CsMutator {
 
@@ -20,6 +21,7 @@ typedef struct CsMutator {
 
   CsList* stack;
   CsList* nursery;
+  CsList* freelist;
 
 } CsMutator;
 
@@ -35,14 +37,7 @@ typedef struct CsStackFrame {
 
 } CsStackFrame;
 
-typedef struct CsNurseryPage {
-
-  uint8_t bitmaps[496];
-  uint64_t nvalues;
-  uint64_t padding;
-  CsValueStruct values[496];
-
-} CsNurseryPage;
+CsValue cs_mutator_new_string(CsMutator* mut, const char* u8str, size_t size);
 
 CsMutator* cs_mutator_new(CsRuntime* cs);
 

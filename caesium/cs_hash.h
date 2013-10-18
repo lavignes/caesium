@@ -6,7 +6,7 @@
 typedef struct CsPair {
   char* u8key;
   void* value;
-  size_t key_len;
+  size_t key_sz;
   uint32_t hash;
 } CsPair;
 
@@ -24,7 +24,7 @@ CsHash* cs_hash_new();
  * Insert a value into a hash table
  * @param  hash    a hash table
  * @param  key     a null-terminated key. The key is copied
- * @param  key_len size of key excluding null terminator
+ * @param  key_sz  size of key excluding null terminator
  * @param  value   a value to pair to the key
  * @return         a reference to the key-value pair storing the value
  */
@@ -34,9 +34,9 @@ CsPair* cs_hash_insert(
   size_t key_len,
   void* value);
 
-CsPair* cs_hash_remove(CsHash* hash, const char* key, size_t key_len);
+CsPair* cs_hash_remove(CsHash* hash, const char* key, size_t key_sz);
 
-CsPair* cs_hash_find(CsHash* hash, const char* key, size_t key_len);
+CsPair* cs_hash_find(CsHash* hash, const char* key, size_t key_sz);
 
 void cs_hash_traverse(CsHash* hash, bool (*fn)(CsPair*, void*), void* data);
 

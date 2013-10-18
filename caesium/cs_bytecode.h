@@ -98,6 +98,7 @@ typedef struct CsByteConst {
   CsByteConstType type;
   union {
     struct {
+      uint32_t hash;
       size_t size;
       char* string;
     };

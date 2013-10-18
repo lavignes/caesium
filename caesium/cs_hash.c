@@ -52,15 +52,15 @@ CsHash* cs_hash_new() {
 CsPair* cs_hash_insert(
   CsHash* hash,
   const char* key,
-  size_t key_len,
+  size_t key_sz,
   void* value)
 {
-  uint32_t h = XXH32(key, key_len, 0xdeadface);
+  uint32_t h = XXH32(key, key_sz, 0xdeadface);
   uint32_t i = h % hash->size;
   CsPair* pair = hash->buckets[i];
   while (pair != NULL) {
     if (pair != DUMMY && h == pair->hash
-      && strncmp(key, pair->u8key, pair->key_len) == 0) {
+      && strncmp(key, pair->u8key, pair->key_sz) == 0) {
       pair->value = value;
       return pair;
     }
@@ -71,11 +71,11 @@ CsPair* cs_hash_insert(
   pair = cs_alloc_object(CsPair);
   if (cs_unlikely(pair == NULL))
     cs_exit(CS_REASON_NOMEM);
-  pair->u8key = malloc(key_len);
+  pair->u8key = malloc(key_sz);
   if (cs_unlikely(pair->u8key == NULL))
     cs_exit(CS_REASON_NOMEM);
-  memcpy(pair->u8key, key, key_len);
-  pair->key_len = key_len;
+  memcpy(pair->u8key, key, key_sz);
+  pair->key_sz = key_sz;
   pair->hash = h;
   pair->value = value;
   hash->buckets[i] = pair;
@@ -86,13 +86,13 @@ CsPair* cs_hash_insert(
   return pair;
 }
 
-CsPair* cs_hash_remove(CsHash* hash, const char* key, size_t key_len) {
-  uint32_t h = XXH32(key, key_len, 0xdeadface);
+CsPair* cs_hash_remove(CsHash* hash, const char* key, size_t key_sz) {
+  uint32_t h = XXH32(key, key_sz, 0xdeadface);
   uint32_t i = h % hash->size;
   CsPair* pair = hash->buckets[i];
   while (pair != NULL) {
     if (pair != DUMMY && h == pair->hash
-      && strncmp(key, pair->u8key, pair->key_len) == 0) {
+      && strncmp(key, pair->u8key, pair->key_sz) == 0) {
       hash->buckets[i] = (void*) DUMMY;
       return pair;
     }
@@ -103,13 +103,13 @@ CsPair* cs_hash_remove(CsHash* hash, const char* key, size_t key_len) {
   return NULL;
 }
 
-CsPair* cs_hash_find(CsHash* hash, const char* key, size_t key_len) {
-  uint32_t h = XXH32(key, key_len, 0xdeadface);
+CsPair* cs_hash_find(CsHash* hash, const char* key, size_t key_sz) {
+  uint32_t h = XXH32(key, key_sz, 0xdeadface);
   uint32_t i = h % hash->size;
   CsPair* pair = hash->buckets[i];
   while (pair != NULL) {
     if (pair != DUMMY && h == pair->hash
-      && strncmp(key, pair->u8key, pair->key_len) == 0) {
+      && strncmp(key, pair->u8key, pair->key_sz) == 0) {
       return pair;
     }
     i++;
