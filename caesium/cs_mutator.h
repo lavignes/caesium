@@ -37,7 +37,14 @@ typedef struct CsStackFrame {
 
 } CsStackFrame;
 
-CsValue cs_mutator_new_string(CsMutator* mut, const char* u8str, size_t size);
+CsValue cs_mutator_new_string(
+  CsMutator* mut,
+  const char* u8str,
+  uint32_t hash,
+  size_t size,
+  size_t length);
+  
+CsValue cs_mutator_new_real(CsMutator* mut, double real);
 
 CsMutator* cs_mutator_new(CsRuntime* cs);
 

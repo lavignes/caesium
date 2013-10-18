@@ -22,6 +22,7 @@ typedef struct CsValueStruct {
         double real;
         struct {
           size_t size;
+          size_t length;
           const char* string;
         };
       };
@@ -46,8 +47,10 @@ extern CsValue CS_NIL;
 #define cs_value_toreal(value) ((double) value->real)
 #define cs_value_tostring(value) ((const char*) value->string)
 
+// Returns the address of a page given a value :)
 #define cs_value_getpage(value) (((uintptr_t) value) & ~((uintptr_t) 0x3FFF))
-#define cs_value_getbits(value, nursery) \
-  ((((uintptr_t) value) - ((uintptr_t) nursery)) >> 0x5)
+// Returns offset into page buffer tp locate the bitmap for a value
+#define cs_value_getbits(value, page) \
+  ((((uintptr_t) value) - ((uintptr_t) page->values)) >> 0x5)
 
 #endif /* _CS_VALUE_H_ */

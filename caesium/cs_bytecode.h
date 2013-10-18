@@ -100,6 +100,7 @@ typedef struct CsByteConst {
     struct {
       uint32_t hash;
       size_t size;
+      size_t length;
       char* string;
     };
     uint32_t integer;

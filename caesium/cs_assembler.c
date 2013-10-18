@@ -192,6 +192,7 @@ CsByteChunk* cs_assembler_assemble(
                 // intercept the buffer
                 konst->string = buffer;
                 konst->size = strlen(buffer);
+                konst->length = cs_utf8_strnlen(buffer, konst->size);
                 konst->hash = XXH32(buffer, konst->size, 0xdeadface);
                 buffer = NULL; // this prevents freeing the buffer
                 // append const to consts list

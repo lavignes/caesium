@@ -5,7 +5,7 @@ CsNurseryPage* cs_nursery_new_page() {
   int i;
   CsNurseryPage* page = NULL;
   if (cs_unlikely(posix_memalign((void**) &page,
-      sizeof(CsValueStruct), sizeof(CsNurseryPage))))
+      sizeof(CsNurseryPage), sizeof(CsNurseryPage))))
     cs_exit(CS_REASON_NOMEM);
 
   // zero-out the page

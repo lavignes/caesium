@@ -8,19 +8,38 @@ static int mut_main(void* data) {
 }
 
 static CsValue cs_mutator_new_value(CsMutator* mut) {
+  CsNurseryPage* page;
   CsValue value = cs_list_pop_front(mut->freelist);
   if (value == NULL) {
     cs_error("Haven't finished expanding the pages yet...\n");
     cs_exit(CS_REASON_UNIMPLEMENTED);
   }
+  // mark the value as used. this is a pretty cheap operation :)
+  page = (CsNurseryPage*) cs_value_getpage(value);
+  page->bitmaps[cs_value_getbits(value, page)] &= CS_NURSERY_USED;
   return value;
 }
 
-CsValue cs_mutator_new_string(CsMutator* mut, const char* u8str, size_t size) {
+CsValue cs_mutator_new_string(
+  CsMutator* mut,
+  const char* u8str,
+  uint32_t hash,
+  size_t size,
+  size_t length)
+{
   CsValue value = cs_mutator_new_value(mut);
   value->type = CS_VALUE_STRING;
   value->string = u8str;
+  value->hash = hash;
   value->size = size;
+  value->length = length;
+  return value;
+}
+
+CsValue cs_mutator_new_real(CsMutator* mut, double real) {
+  CsValue value = cs_mutator_new_value(mut);
+  value->type = CS_VALUE_REAL;
+  value->real = real;
   return value;
 }
 
@@ -121,14 +140,12 @@ void cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
             break;
 
           case CS_CONST_TYPE_REAL:
-            frame->stacks[a] = malloc(sizeof(CsValueStruct));
-            frame->stacks[a]->type = CS_VALUE_REAL;
-            frame->stacks[a]->real = konst->real;
+            frame->stacks[a] = cs_mutator_new_real(mut, konst->real);
             break;
 
           case CS_CONST_TYPE_STRING:
-            frame->stacks[a] =
-              cs_mutator_new_string(mut, konst->string, konst->size);
+            frame->stacks[a] = cs_mutator_new_string(mut, konst->string,
+              konst->hash, konst->size, konst->length);
             break;
         }
         break;
