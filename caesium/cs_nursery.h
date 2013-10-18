@@ -23,4 +23,6 @@ typedef struct CsNurseryPage {
 
 CsNurseryPage* cs_nursery_new_page();
 
+void cs_nursery_free_page(CsNurseryPage* page);
+
 #endif /* _CS_NURSERY_ */

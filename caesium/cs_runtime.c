@@ -23,9 +23,9 @@ CsRuntime* cs_runtime_new() {
   return cs;
 }
 
-bool free_mutators(void* node, void* data) {
-  cs_mutator_free((CsMutator*) node);
-  return true;
+bool free_mutators(void* mut, void* data) {
+  cs_mutator_free(mut);
+  return false;
 }
 
 void cs_runtime_free(CsRuntime* cs) {

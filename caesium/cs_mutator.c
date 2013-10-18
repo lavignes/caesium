@@ -68,7 +68,17 @@ CsMutator* cs_mutator_new(CsRuntime* cs) {
   return mut;
 }
 
+static bool free_page(void* page, void* data) {
+  cs_nursery_free_page(page);
+  return false;
+}
+
 void cs_mutator_free(CsMutator* mut) {
+  cs_list_free(mut->stack);
+  cs_list_traverse(mut->nursery, free_page, NULL);
+  cs_list_free(mut->nursery);
+  cs_list_free(mut->freelist);
+  cs_list_free(mut->error_stack);
   cs_free_object(mut);
 }
 
@@ -221,5 +231,7 @@ int cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
         break;
     }
   }
+
+  cs_free_object(frame);
   return 0;
 }
