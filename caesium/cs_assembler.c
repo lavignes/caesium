@@ -53,6 +53,7 @@ void setup_assembler() {
   cs_hash_insert(assembler_ops, "call", 4, (void*) CS_OPCODE_CALL);
   cs_hash_insert(assembler_ops, "ret", 3, (void*) CS_OPCODE_RET);
   cs_hash_insert(assembler_ops, "raise", 5, (void*) CS_OPCODE_RAISE);
+  cs_hash_insert(assembler_ops, "catch", 5, (void*) CS_OPCODE_CATCH);
   cs_hash_insert(assembler_ops, "spwn", 4, (void*) CS_OPCODE_SPWN);
   cs_hash_insert(assembler_ops, "send", 4, (void*) CS_OPCODE_SEND);
   cs_hash_insert(assembler_ops, "recv", 4, (void*) CS_OPCODE_RECV);
@@ -84,6 +85,7 @@ CsByteChunk* cs_assembler_assemble(
   char* buffer;
   bool new_line;
   bool new_comment;
+  bool in_resq = false;
   const char* c = u8str;
   size_t len, line = 1, col = 1;
   CsPair* pair;
@@ -150,6 +152,7 @@ CsByteChunk* cs_assembler_assemble(
                 func->funcs = cs_array_new();
                 func->codes = cs_array_new();
                 func->consts = cs_array_new();
+                func->resq = NULL;
                 cs_list_push_back(fstack, func);
                 break;
 
@@ -211,8 +214,12 @@ CsByteChunk* cs_assembler_assemble(
                 instruction =
                   cs_bytecode_make_type1(CS_OPCODE_MOVE, arg0, arg1, 0);
                 cur_func = cs_list_peek_back(fstack);
-                cs_array_insert(cur_func->codes, -1,
-                  (void*) (uintptr_t) instruction);
+                if (in_resq)
+                  cs_array_insert(cur_func->resq, -1,
+                    (void*) (uintptr_t) instruction);
+                else
+                  cs_array_insert(cur_func->codes, -1,
+                    (void*) (uintptr_t) instruction);
                 break;
 
               case CS_ASM_STATE_LOADK:
@@ -224,8 +231,12 @@ CsByteChunk* cs_assembler_assemble(
                 instruction =
                   cs_bytecode_make_type1(CS_OPCODE_LOADK, arg0, arg1, 0);
                 cur_func = cs_list_peek_back(fstack);
-                cs_array_insert(cur_func->codes, -1,
-                  (void*) (uintptr_t) instruction);
+                if (in_resq)
+                  cs_array_insert(cur_func->resq, -1,
+                    (void*) (uintptr_t) instruction);
+                else
+                  cs_array_insert(cur_func->codes, -1,
+                    (void*) (uintptr_t) instruction);
                 break;
 
               case CS_ASM_STATE_LOADG:
@@ -237,8 +248,12 @@ CsByteChunk* cs_assembler_assemble(
                 instruction =
                   cs_bytecode_make_type1(CS_OPCODE_LOADG, arg0, arg1, 0);
                 cur_func = cs_list_peek_back(fstack);
-                cs_array_insert(cur_func->codes, -1,
-                  (void*) (uintptr_t) instruction);
+                if (in_resq)
+                  cs_array_insert(cur_func->resq, -1,
+                    (void*) (uintptr_t) instruction);
+                else
+                  cs_array_insert(cur_func->codes, -1,
+                    (void*) (uintptr_t) instruction);
                 break;
 
               case CS_ASM_STATE_STORG:
@@ -250,8 +265,12 @@ CsByteChunk* cs_assembler_assemble(
                 instruction =
                   cs_bytecode_make_type1(CS_OPCODE_STORG, arg0, arg1, 0);
                 cur_func = cs_list_peek_back(fstack);
-                cs_array_insert(cur_func->codes, -1,
-                  (void*) (uintptr_t) instruction);
+                if (in_resq)
+                  cs_array_insert(cur_func->resq, -1,
+                    (void*) (uintptr_t) instruction);
+                else
+                  cs_array_insert(cur_func->codes, -1,
+                    (void*) (uintptr_t) instruction);
                 break;
 
               case CS_ASM_STATE_LOADI:
@@ -263,8 +282,12 @@ CsByteChunk* cs_assembler_assemble(
                 instruction =
                   cs_bytecode_make_type1(CS_OPCODE_LOADI, arg0, arg1, arg2);
                 cur_func = cs_list_peek_back(fstack);
-                cs_array_insert(cur_func->codes, -1,
-                  (void*) (uintptr_t) instruction);
+                if (in_resq)
+                  cs_array_insert(cur_func->resq, -1,
+                    (void*) (uintptr_t) instruction);
+                else
+                  cs_array_insert(cur_func->codes, -1,
+                    (void*) (uintptr_t) instruction);
                 break;
 
               case CS_ASM_STATE_STORI:
@@ -276,8 +299,12 @@ CsByteChunk* cs_assembler_assemble(
                 instruction =
                   cs_bytecode_make_type1(CS_OPCODE_STORI, arg0, arg1, arg2);
                 cur_func = cs_list_peek_back(fstack);
-                cs_array_insert(cur_func->codes, -1,
-                  (void*) (uintptr_t) instruction);
+                if (in_resq)
+                  cs_array_insert(cur_func->resq, -1,
+                    (void*) (uintptr_t) instruction);
+                else
+                  cs_array_insert(cur_func->codes, -1,
+                    (void*) (uintptr_t) instruction);
                 break;
 
               case CS_ASM_STATE_LODUP:
@@ -289,8 +316,12 @@ CsByteChunk* cs_assembler_assemble(
                 instruction =
                   cs_bytecode_make_type1(CS_OPCODE_LODUP, arg0, arg1, 0);
                 cur_func = cs_list_peek_back(fstack);
-                cs_array_insert(cur_func->codes, -1,
-                  (void*) (uintptr_t) instruction);
+                if (in_resq)
+                  cs_array_insert(cur_func->resq, -1,
+                    (void*) (uintptr_t) instruction);
+                else
+                  cs_array_insert(cur_func->codes, -1,
+                    (void*) (uintptr_t) instruction);
                 break;
 
               case CS_ASM_STATE_STRUP:
@@ -302,8 +333,12 @@ CsByteChunk* cs_assembler_assemble(
                 instruction =
                   cs_bytecode_make_type1(CS_OPCODE_STRUP, arg0, arg1, 0);
                 cur_func = cs_list_peek_back(fstack);
-                cs_array_insert(cur_func->codes, -1,
-                  (void*) (uintptr_t) instruction);
+                if (in_resq)
+                  cs_array_insert(cur_func->resq, -1,
+                    (void*) (uintptr_t) instruction);
+                else
+                  cs_array_insert(cur_func->codes, -1,
+                    (void*) (uintptr_t) instruction);
                 break;
 
               case CS_ASM_STATE_PUTS:
@@ -315,8 +350,12 @@ CsByteChunk* cs_assembler_assemble(
                 instruction =
                   cs_bytecode_make_type1(CS_OPCODE_PUTS, arg0, 0, 0);
                 cur_func = cs_list_peek_back(fstack);
-                cs_array_insert(cur_func->codes, -1,
-                  (void*) (uintptr_t) instruction);
+                if (in_resq)
+                  cs_array_insert(cur_func->resq, -1,
+                    (void*) (uintptr_t) instruction);
+                else
+                  cs_array_insert(cur_func->codes, -1,
+                    (void*) (uintptr_t) instruction);
                 break;
 
               case CS_ASM_STATE_NEW:
@@ -328,8 +367,12 @@ CsByteChunk* cs_assembler_assemble(
                 instruction =
                   cs_bytecode_make_type1(CS_OPCODE_NEW, arg0, arg1, 0);
                 cur_func = cs_list_peek_back(fstack);
-                cs_array_insert(cur_func->codes, -1,
-                  (void*) (uintptr_t) instruction);
+                if (in_resq)
+                  cs_array_insert(cur_func->resq, -1,
+                    (void*) (uintptr_t) instruction);
+                else
+                  cs_array_insert(cur_func->codes, -1,
+                    (void*) (uintptr_t) instruction);
                 break;
 
               case CS_ASM_STATE_ADD:
@@ -341,8 +384,12 @@ CsByteChunk* cs_assembler_assemble(
                 instruction =
                   cs_bytecode_make_type1(CS_OPCODE_ADD, arg0, arg1, arg2);
                 cur_func = cs_list_peek_back(fstack);
-                cs_array_insert(cur_func->codes, -1,
-                  (void*) (uintptr_t) instruction);
+                if (in_resq)
+                  cs_array_insert(cur_func->resq, -1,
+                    (void*) (uintptr_t) instruction);
+                else
+                  cs_array_insert(cur_func->codes, -1,
+                    (void*) (uintptr_t) instruction);
                 break;
 
               case CS_ASM_STATE_SUB:
@@ -354,8 +401,12 @@ CsByteChunk* cs_assembler_assemble(
                 instruction =
                   cs_bytecode_make_type1(CS_OPCODE_SUB, arg0, arg1, arg2);
                 cur_func = cs_list_peek_back(fstack);
-                cs_array_insert(cur_func->codes, -1,
-                  (void*) (uintptr_t) instruction);
+                if (in_resq)
+                  cs_array_insert(cur_func->resq, -1,
+                    (void*) (uintptr_t) instruction);
+                else
+                  cs_array_insert(cur_func->codes, -1,
+                    (void*) (uintptr_t) instruction);
                 break;
 
               case CS_ASM_STATE_MUL:
@@ -367,8 +418,12 @@ CsByteChunk* cs_assembler_assemble(
                 instruction =
                   cs_bytecode_make_type1(CS_OPCODE_MUL, arg0, arg1, arg2);
                 cur_func = cs_list_peek_back(fstack);
-                cs_array_insert(cur_func->codes, -1,
-                  (void*) (uintptr_t) instruction);
+                if (in_resq)
+                  cs_array_insert(cur_func->resq, -1,
+                    (void*) (uintptr_t) instruction);
+                else
+                  cs_array_insert(cur_func->codes, -1,
+                    (void*) (uintptr_t) instruction);
                 break;
 
               case CS_ASM_STATE_DIV:
@@ -380,8 +435,12 @@ CsByteChunk* cs_assembler_assemble(
                 instruction =
                   cs_bytecode_make_type1(CS_OPCODE_DIV, arg0, arg1, arg2);
                 cur_func = cs_list_peek_back(fstack);
-                cs_array_insert(cur_func->codes, -1,
-                  (void*) (uintptr_t) instruction);
+                if (in_resq)
+                  cs_array_insert(cur_func->resq, -1,
+                    (void*) (uintptr_t) instruction);
+                else
+                  cs_array_insert(cur_func->codes, -1,
+                    (void*) (uintptr_t) instruction);
                 break;
 
               case CS_ASM_STATE_MOD:
@@ -393,8 +452,12 @@ CsByteChunk* cs_assembler_assemble(
                 instruction =
                   cs_bytecode_make_type1(CS_OPCODE_MOD, arg0, arg1, arg2);
                 cur_func = cs_list_peek_back(fstack);
-                cs_array_insert(cur_func->codes, -1,
-                  (void*) (uintptr_t) instruction);
+                if (in_resq)
+                  cs_array_insert(cur_func->resq, -1,
+                    (void*) (uintptr_t) instruction);
+                else
+                  cs_array_insert(cur_func->codes, -1,
+                    (void*) (uintptr_t) instruction);
                 break;
 
               case CS_ASM_STATE_POW:
@@ -406,8 +469,12 @@ CsByteChunk* cs_assembler_assemble(
                 instruction =
                   cs_bytecode_make_type1(CS_OPCODE_POW, arg0, arg1, arg2);
                 cur_func = cs_list_peek_back(fstack);
-                cs_array_insert(cur_func->codes, -1,
-                  (void*) (uintptr_t) instruction);
+                if (in_resq)
+                  cs_array_insert(cur_func->resq, -1,
+                    (void*) (uintptr_t) instruction);
+                else
+                  cs_array_insert(cur_func->codes, -1,
+                    (void*) (uintptr_t) instruction);
                 break;
 
               case CS_ASM_STATE_NEG:
@@ -419,8 +486,12 @@ CsByteChunk* cs_assembler_assemble(
                 instruction =
                   cs_bytecode_make_type1(CS_OPCODE_NEG, arg0, arg1, 0);
                 cur_func = cs_list_peek_back(fstack);
-                cs_array_insert(cur_func->codes, -1,
-                  (void*) (uintptr_t) instruction);
+                if (in_resq)
+                  cs_array_insert(cur_func->resq, -1,
+                    (void*) (uintptr_t) instruction);
+                else
+                  cs_array_insert(cur_func->codes, -1,
+                    (void*) (uintptr_t) instruction);
                 break;
 
               case CS_ASM_STATE_AND:
@@ -432,8 +503,12 @@ CsByteChunk* cs_assembler_assemble(
                 instruction =
                   cs_bytecode_make_type1(CS_OPCODE_AND, arg0, arg1, arg2);
                 cur_func = cs_list_peek_back(fstack);
-                cs_array_insert(cur_func->codes, -1,
-                  (void*) (uintptr_t) instruction);
+                if (in_resq)
+                  cs_array_insert(cur_func->resq, -1,
+                    (void*) (uintptr_t) instruction);
+                else
+                  cs_array_insert(cur_func->codes, -1,
+                    (void*) (uintptr_t) instruction);
                 break;
 
               case CS_ASM_STATE_OR:
@@ -445,8 +520,12 @@ CsByteChunk* cs_assembler_assemble(
                 instruction =
                   cs_bytecode_make_type1(CS_OPCODE_OR, arg0, arg1, arg2);
                 cur_func = cs_list_peek_back(fstack);
-                cs_array_insert(cur_func->codes, -1,
-                  (void*) (uintptr_t) instruction);
+                if (in_resq)
+                  cs_array_insert(cur_func->resq, -1,
+                    (void*) (uintptr_t) instruction);
+                else
+                  cs_array_insert(cur_func->codes, -1,
+                    (void*) (uintptr_t) instruction);
                 break;
 
               case CS_ASM_STATE_XOR:
@@ -458,8 +537,12 @@ CsByteChunk* cs_assembler_assemble(
                 instruction =
                   cs_bytecode_make_type1(CS_OPCODE_XOR, arg0, arg1, arg2);
                 cur_func = cs_list_peek_back(fstack);
-                cs_array_insert(cur_func->codes, -1,
-                  (void*) (uintptr_t) instruction);
+                if (in_resq)
+                  cs_array_insert(cur_func->resq, -1,
+                    (void*) (uintptr_t) instruction);
+                else
+                  cs_array_insert(cur_func->codes, -1,
+                    (void*) (uintptr_t) instruction);
                 break;
 
               case CS_ASM_STATE_NOT:
@@ -471,8 +554,12 @@ CsByteChunk* cs_assembler_assemble(
                 instruction =
                   cs_bytecode_make_type1(CS_OPCODE_NOT, arg0, arg1, 0);
                 cur_func = cs_list_peek_back(fstack);
-                cs_array_insert(cur_func->codes, -1,
-                  (void*) (uintptr_t) instruction);
+                if (in_resq)
+                  cs_array_insert(cur_func->resq, -1,
+                    (void*) (uintptr_t) instruction);
+                else
+                  cs_array_insert(cur_func->codes, -1,
+                    (void*) (uintptr_t) instruction);
                 break;
 
               case CS_ASM_STATE_SHL:
@@ -484,8 +571,12 @@ CsByteChunk* cs_assembler_assemble(
                 instruction =
                   cs_bytecode_make_type1(CS_OPCODE_SHL, arg0, arg1, arg2);
                 cur_func = cs_list_peek_back(fstack);
-                cs_array_insert(cur_func->codes, -1,
-                  (void*) (uintptr_t) instruction);
+                if (in_resq)
+                  cs_array_insert(cur_func->resq, -1,
+                    (void*) (uintptr_t) instruction);
+                else
+                  cs_array_insert(cur_func->codes, -1,
+                    (void*) (uintptr_t) instruction);
                 break;
 
               case CS_ASM_STATE_SHR:
@@ -497,8 +588,12 @@ CsByteChunk* cs_assembler_assemble(
                 instruction =
                   cs_bytecode_make_type1(CS_OPCODE_SHR, arg0, arg1, arg2);
                 cur_func = cs_list_peek_back(fstack);
-                cs_array_insert(cur_func->codes, -1,
-                  (void*) (uintptr_t) instruction);
+                if (in_resq)
+                  cs_array_insert(cur_func->resq, -1,
+                    (void*) (uintptr_t) instruction);
+                else
+                  cs_array_insert(cur_func->codes, -1,
+                    (void*) (uintptr_t) instruction);
                 break;
 
               case CS_ASM_STATE_JMP:
@@ -510,8 +605,12 @@ CsByteChunk* cs_assembler_assemble(
                 instruction =
                   cs_bytecode_make_type3(CS_OPCODE_JMP, 0, arg0);
                 cur_func = cs_list_peek_back(fstack);
-                cs_array_insert(cur_func->codes, -1,
-                  (void*) (uintptr_t) instruction);
+                if (in_resq)
+                  cs_array_insert(cur_func->resq, -1,
+                    (void*) (uintptr_t) instruction);
+                else
+                  cs_array_insert(cur_func->codes, -1,
+                    (void*) (uintptr_t) instruction);
                 break;
 
               case CS_ASM_STATE_IF:
@@ -523,8 +622,12 @@ CsByteChunk* cs_assembler_assemble(
                 instruction =
                   cs_bytecode_make_type3(CS_OPCODE_IF, arg0, arg1);
                 cur_func = cs_list_peek_back(fstack);
-                cs_array_insert(cur_func->codes, -1,
-                  (void*) (uintptr_t) instruction);
+                if (in_resq)
+                  cs_array_insert(cur_func->resq, -1,
+                    (void*) (uintptr_t) instruction);
+                else
+                  cs_array_insert(cur_func->codes, -1,
+                    (void*) (uintptr_t) instruction);
                 break;
 
               case CS_ASM_STATE_LT:
@@ -536,8 +639,12 @@ CsByteChunk* cs_assembler_assemble(
                 instruction =
                   cs_bytecode_make_type1(CS_OPCODE_LT, arg0, arg1, arg2);
                 cur_func = cs_list_peek_back(fstack);
-                cs_array_insert(cur_func->codes, -1,
-                  (void*) (uintptr_t) instruction);
+                if (in_resq)
+                  cs_array_insert(cur_func->resq, -1,
+                    (void*) (uintptr_t) instruction);
+                else
+                  cs_array_insert(cur_func->codes, -1,
+                    (void*) (uintptr_t) instruction);
                 break;
 
               case CS_ASM_STATE_LE:
@@ -549,8 +656,12 @@ CsByteChunk* cs_assembler_assemble(
                 instruction =
                   cs_bytecode_make_type1(CS_OPCODE_LE, arg0, arg1, arg2);
                 cur_func = cs_list_peek_back(fstack);
-                cs_array_insert(cur_func->codes, -1,
-                  (void*) (uintptr_t) instruction);
+                if (in_resq)
+                  cs_array_insert(cur_func->resq, -1,
+                    (void*) (uintptr_t) instruction);
+                else
+                  cs_array_insert(cur_func->codes, -1,
+                    (void*) (uintptr_t) instruction);
                 break;
 
               case CS_ASM_STATE_EQ:
@@ -562,8 +673,12 @@ CsByteChunk* cs_assembler_assemble(
                 instruction =
                   cs_bytecode_make_type1(CS_OPCODE_EQ, arg0, arg1, arg2);
                 cur_func = cs_list_peek_back(fstack);
-                cs_array_insert(cur_func->codes, -1,
-                  (void*) (uintptr_t) instruction);
+                if (in_resq)
+                  cs_array_insert(cur_func->resq, -1,
+                    (void*) (uintptr_t) instruction);
+                else
+                  cs_array_insert(cur_func->codes, -1,
+                    (void*) (uintptr_t) instruction);
                 break;
 
               case CS_ASM_STATE_CLOS:
@@ -575,8 +690,12 @@ CsByteChunk* cs_assembler_assemble(
                 instruction =
                   cs_bytecode_make_type2(CS_OPCODE_CLOS, arg0, arg1);
                 cur_func = cs_list_peek_back(fstack);
-                cs_array_insert(cur_func->codes, -1,
-                  (void*) (uintptr_t) instruction);
+                if (in_resq)
+                  cs_array_insert(cur_func->resq, -1,
+                    (void*) (uintptr_t) instruction);
+                else
+                  cs_array_insert(cur_func->codes, -1,
+                    (void*) (uintptr_t) instruction);
                 break;
 
               case CS_ASM_STATE_CPYUP:
@@ -588,8 +707,12 @@ CsByteChunk* cs_assembler_assemble(
                 instruction =
                   cs_bytecode_make_type1(CS_OPCODE_CPYUP, arg0, arg1, arg2);
                 cur_func = cs_list_peek_back(fstack);
-                cs_array_insert(cur_func->codes, -1,
-                  (void*) (uintptr_t) instruction);
+                if (in_resq)
+                  cs_array_insert(cur_func->resq, -1,
+                    (void*) (uintptr_t) instruction);
+                else
+                  cs_array_insert(cur_func->codes, -1,
+                    (void*) (uintptr_t) instruction);
                 break;
 
               case CS_ASM_STATE_MOVUP:
@@ -601,8 +724,12 @@ CsByteChunk* cs_assembler_assemble(
                 instruction =
                   cs_bytecode_make_type1(CS_OPCODE_MOVUP, arg0, arg1, arg2);
                 cur_func = cs_list_peek_back(fstack);
-                cs_array_insert(cur_func->codes, -1,
-                  (void*) (uintptr_t) instruction);
+                if (in_resq)
+                  cs_array_insert(cur_func->resq, -1,
+                    (void*) (uintptr_t) instruction);
+                else
+                  cs_array_insert(cur_func->codes, -1,
+                    (void*) (uintptr_t) instruction);
                 break;
 
               case CS_ASM_STATE_CALL:
@@ -614,8 +741,12 @@ CsByteChunk* cs_assembler_assemble(
                 instruction =
                   cs_bytecode_make_type1(CS_OPCODE_CALL, arg0, arg1, arg2);
                 cur_func = cs_list_peek_back(fstack);
-                cs_array_insert(cur_func->codes, -1,
-                  (void*) (uintptr_t) instruction);
+                if (in_resq)
+                  cs_array_insert(cur_func->resq, -1,
+                    (void*) (uintptr_t) instruction);
+                else
+                  cs_array_insert(cur_func->codes, -1,
+                    (void*) (uintptr_t) instruction);
                 break;
 
               case CS_ASM_STATE_RET:
@@ -627,8 +758,12 @@ CsByteChunk* cs_assembler_assemble(
                 instruction =
                   cs_bytecode_make_type1(CS_OPCODE_RET, arg0, arg1, 0);
                 cur_func = cs_list_peek_back(fstack);
-                cs_array_insert(cur_func->codes, -1,
-                  (void*) (uintptr_t) instruction);
+                if (in_resq)
+                  cs_array_insert(cur_func->resq, -1,
+                    (void*) (uintptr_t) instruction);
+                else
+                  cs_array_insert(cur_func->codes, -1,
+                    (void*) (uintptr_t) instruction);
                 break;
 
               case CS_ASM_STATE_RAISE:
@@ -638,10 +773,31 @@ CsByteChunk* cs_assembler_assemble(
                   cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
                 }
                 instruction =
-                  cs_bytecode_make_type3(CS_OPCODE_RAISE, 0, arg0);
+                  cs_bytecode_make_type1(CS_OPCODE_RAISE, arg0, 0, 0);
                 cur_func = cs_list_peek_back(fstack);
-                cs_array_insert(cur_func->codes, -1,
-                  (void*) (uintptr_t) instruction);
+                if (in_resq)
+                  cs_array_insert(cur_func->resq, -1,
+                    (void*) (uintptr_t) instruction);
+                else
+                  cs_array_insert(cur_func->codes, -1,
+                    (void*) (uintptr_t) instruction);
+                break;
+
+              case CS_ASM_STATE_CATCH:
+                if (sscanf(buffer, "%d", &arg0) != 1) {
+                  cs_error("%zu:%zu: wrong number of operands for catch\n",
+                    line, col);
+                  cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
+                }
+                instruction =
+                  cs_bytecode_make_type1(CS_OPCODE_CATCH, arg0, 0, 0);
+                cur_func = cs_list_peek_back(fstack);
+                if (in_resq)
+                  cs_array_insert(cur_func->resq, -1,
+                    (void*) (uintptr_t) instruction);
+                else
+                  cs_array_insert(cur_func->codes, -1,
+                    (void*) (uintptr_t) instruction);
                 break;
 
               case CS_ASM_STATE_SPWN:
@@ -653,8 +809,12 @@ CsByteChunk* cs_assembler_assemble(
                 instruction =
                   cs_bytecode_make_type2(CS_OPCODE_SPWN, arg0, arg1);
                 cur_func = cs_list_peek_back(fstack);
-                cs_array_insert(cur_func->codes, -1,
-                  (void*) (uintptr_t) instruction);
+                if (in_resq)
+                  cs_array_insert(cur_func->resq, -1,
+                    (void*) (uintptr_t) instruction);
+                else
+                  cs_array_insert(cur_func->codes, -1,
+                    (void*) (uintptr_t) instruction);
                 break;
 
               case CS_ASM_STATE_SEND:
@@ -666,8 +826,12 @@ CsByteChunk* cs_assembler_assemble(
                 instruction =
                   cs_bytecode_make_type1(CS_OPCODE_SEND, arg0, arg1, 0);
                 cur_func = cs_list_peek_back(fstack);
-                cs_array_insert(cur_func->codes, -1,
-                  (void*) (uintptr_t) instruction);
+                if (in_resq)
+                  cs_array_insert(cur_func->resq, -1,
+                    (void*) (uintptr_t) instruction);
+                else
+                  cs_array_insert(cur_func->codes, -1,
+                    (void*) (uintptr_t) instruction);
                 break;
 
               case CS_ASM_STATE_RECV:
@@ -679,8 +843,12 @@ CsByteChunk* cs_assembler_assemble(
                 instruction =
                   cs_bytecode_make_type1(CS_OPCODE_RECV, arg0, arg1, 0);
                 cur_func = cs_list_peek_back(fstack);
-                cs_array_insert(cur_func->codes, -1,
-                  (void*) (uintptr_t) instruction);
+                if (in_resq)
+                  cs_array_insert(cur_func->resq, -1,
+                    (void*) (uintptr_t) instruction);
+                else
+                  cs_array_insert(cur_func->codes, -1,
+                    (void*) (uintptr_t) instruction);
                 break;
 
               default:
@@ -740,12 +908,26 @@ CsByteChunk* cs_assembler_assemble(
                   cs_list_push_back(stack, (void*) CS_ASM_STATE_ARGS);
                   break;
 
+                case CS_PSEUDO_RESQ:
+                  cur_func = cs_list_peek_back(fstack);
+                  if (cur_func->resq != NULL) {
+                    cs_error("%zu:%zu: Blocks resq only once!\n", line, col);
+                    cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
+                  }
+                  cur_func->resq = cs_array_new();
+                  in_resq = true;
+                  break;
+
                 case CS_PSEUDO_END:
                   if ((uintptr_t) cs_list_peek_back(stack)
                     != CS_ASM_STATE_BLOCK)
                   {
                     cs_error("%zu:%zu: .end op unexpected...\n", line, col);
                     cs_exit(CS_REASON_ASSEMBLY_MALFORMED);
+                  }
+                  if (in_resq) {
+                    in_resq = false;
+                    goto close_resq;
                   }
                   // pop the block state off the stack
                   cs_list_pop_back(stack);
@@ -759,7 +941,7 @@ CsByteChunk* cs_assembler_assemble(
                   }
                   cur_func = cs_list_peek_back(fstack);
                   cs_array_insert(cur_func->funcs, -1, func);
-                  break;
+                  close_resq: break;
 
                 case CS_PSEUDO_CONST:
                   if ((uintptr_t) cs_list_peek_back(stack)

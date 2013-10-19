@@ -39,6 +39,8 @@ static bool free_func(void* func_ptr, void* data) {
 }
 
 void cs_bytefunction_free(CsByteFunction* func) {
+  if (func->resq)
+    cs_array_free(func->resq);
   cs_array_free(func->codes);
   cs_array_traverse(func->funcs, free_func, NULL);
   cs_array_free(func->funcs);

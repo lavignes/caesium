@@ -8,6 +8,11 @@ static int mut_main(void* data) {
   return mut->entry_point(mut, mut->data);
 }
 
+void cs_mutator_raise(CsMutator* mut, CsValue error) {
+  mut->error = true;
+  mut->error_register = error;
+}
+
 static CsValue cs_mutator_new_value(CsMutator* mut) {
   CsNurseryPage* page;
   CsValue value = cs_list_pop_front(mut->freelist);
@@ -51,7 +56,10 @@ CsMutator* cs_mutator_new(CsRuntime* cs) {
     cs_exit(CS_REASON_NOMEM);
   mut->started = false;
   mut->cs = cs;
+
+  mut->error = false;
   mut->error_stack = cs_list_new();
+  mut->error_register = CS_NIL;
   mut->stack = cs_list_new();
 
   mut->nursery = cs_list_new();
@@ -150,117 +158,132 @@ int cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
   int a, b, c;
 
   CsClosure* closure = create_stack_frame(chunk->entry);
-  cs_list_push_back(mut->stack, closure);
 
-  for (closure->pc = 0; closure->pc < closure->ncodes; closure->pc++) {
-    CsByteCode code = closure->codes[closure->pc];
-    switch (cs_bytecode_get_opcode(code)) {
-      case CS_OPCODE_MOVE:
-        a = cs_bytecode_get_a(code);
-        b = cs_bytecode_get_b(code);
-        if (b > 255) {
-          b = b - 256;
-          goto move_as_loadk;
-        }
-        closure->stacks[a] = closure->stacks[b];
-        break;
-
-      case CS_OPCODE_LOADK:
-        a = cs_bytecode_get_a(code);
-        b = cs_bytecode_get_b(code);
-        move_as_loadk: closure->stacks[a] =
-          loadk(mut, closure->cur_func->consts->buckets[b]);
-        break;
-        
-      case CS_OPCODE_LOADG:
-        a = cs_bytecode_get_a(code);
-        b = cs_bytecode_get_b(code);
-        konst = closure->cur_func->consts->buckets[b];
-        mtx_lock(&mut->cs->globals_lock);
-        pair = cs_hash_find(mut->cs->globals, konst->string, konst->size);
-        mtx_unlock(&mut->cs->globals_lock);
-        if (cs_likely(pair != NULL))
-          closure->stacks[a] = pair->value;
-        else
-          // This should raise.... but just return NIL for now
-          closure->stacks[a] = CS_NIL;
-        break;
-
-      case CS_OPCODE_STORG:
-        a = cs_bytecode_get_a(code);
-        b = cs_bytecode_get_b(code);
-        konst = closure->cur_func->consts->buckets[b];
-        mtx_lock(&mut->cs->globals_lock);
-        cs_hash_insert(
-          mut->cs->globals,
-          konst->string,
-          konst->size,
-          closure->stacks[a]);
-        mtx_unlock(&mut->cs->globals_lock);
-        break;
-
-      case CS_OPCODE_PUTS:
-        a = cs_bytecode_get_a(code);
-        if (cs_value_isint(closure->stacks[a])) {
-          printf("%"PRIiPTR"\n", cs_value_toint(closure->stacks[a]));
-          break;
-        }
-        switch (closure->stacks[a]->type) {
-          case CS_VALUE_NIL:
-            printf("nil\n");
-            break;
-
-          case CS_VALUE_TRUE:
-            printf("true\n");
-            break;
-
-          case CS_VALUE_FALSE:
-            printf("false\n");
-            break;
-
-          case CS_VALUE_REAL:
-            printf("%g\n", cs_value_toreal(closure->stacks[a]));
-            break;
-
-          case CS_VALUE_STRING:
-            printf("%s\n", cs_value_tostring(closure->stacks[a]));
-            break;
-        }
-        break;
-
-        case CS_OPCODE_ADD:
+  while (cs_likely(closure)) {
+    for (closure->pc = 0; closure->pc < closure->ncodes; closure->pc++) {
+      CsByteCode code = closure->codes[closure->pc];
+      switch (cs_bytecode_get_opcode(code)) {
+        case CS_OPCODE_MOVE:
           a = cs_bytecode_get_a(code);
           b = cs_bytecode_get_b(code);
-          c = cs_bytecode_get_c(code);
-          // Read the args as konst or value
-          bval = load_rk_value(b);
-          cval = load_rk_value(c);
-          if (cs_value_isint(bval)) {
-            closure->stacks[a] = cs_int_add(mut, bval, cval);
+          if (b > 255) {
+            b = b - 256;
+            goto move_as_loadk;
+          }
+          closure->stacks[a] = closure->stacks[b];
+          break;
+
+        case CS_OPCODE_LOADK:
+          a = cs_bytecode_get_a(code);
+          b = cs_bytecode_get_b(code);
+          move_as_loadk: closure->stacks[a] =
+            loadk(mut, closure->cur_func->consts->buckets[b]);
+          break;
+          
+        case CS_OPCODE_LOADG:
+          a = cs_bytecode_get_a(code);
+          b = cs_bytecode_get_b(code);
+          konst = closure->cur_func->consts->buckets[b];
+          mtx_lock(&mut->cs->globals_lock);
+          pair = cs_hash_find(mut->cs->globals, konst->string, konst->size);
+          mtx_unlock(&mut->cs->globals_lock);
+          if (cs_likely(pair != NULL))
+            closure->stacks[a] = pair->value;
+          else
+            // This should raise.... but just return NIL for now
+            closure->stacks[a] = CS_NIL;
+          break;
+
+        case CS_OPCODE_STORG:
+          a = cs_bytecode_get_a(code);
+          b = cs_bytecode_get_b(code);
+          konst = closure->cur_func->consts->buckets[b];
+          mtx_lock(&mut->cs->globals_lock);
+          cs_hash_insert(
+            mut->cs->globals,
+            konst->string,
+            konst->size,
+            closure->stacks[a]);
+          mtx_unlock(&mut->cs->globals_lock);
+          break;
+
+        case CS_OPCODE_PUTS:
+          a = cs_bytecode_get_a(code);
+          if (cs_value_isint(closure->stacks[a])) {
+            printf("%"PRIiPTR"\n", cs_value_toint(closure->stacks[a]));
             break;
           }
-          switch (bval->type) {
-            case CS_VALUE_REAL:
-              closure->stacks[a] = cs_real_add(mut, bval, cval);
+          switch (closure->stacks[a]->type) {
+            case CS_VALUE_NIL:
+              printf("nil\n");
               break;
 
-            default:
-              cs_error("Trying to add bad type!\n");
-              closure->stacks[a] = CS_NIL;
+            case CS_VALUE_TRUE:
+              printf("true\n");
+              break;
+
+            case CS_VALUE_FALSE:
+              printf("false\n");
+              break;
+
+            case CS_VALUE_REAL:
+              printf("%g\n", cs_value_toreal(closure->stacks[a]));
+              break;
+
+            case CS_VALUE_STRING:
+              printf("%s\n", cs_value_tostring(closure->stacks[a]));
               break;
           }
           break;
 
-        case CS_OPCODE_RET:
+          case CS_OPCODE_ADD:
+            a = cs_bytecode_get_a(code);
+            b = cs_bytecode_get_b(code);
+            c = cs_bytecode_get_c(code);
+            // Read the args as konst or value
+            bval = load_rk_value(b);
+            cval = load_rk_value(c);
+            if (cs_value_isint(bval)) {
+              closure->stacks[a] = cs_int_add(mut, bval, cval);
+              break;
+            }
+            switch (bval->type) {
+              case CS_VALUE_REAL:
+                closure->stacks[a] = cs_real_add(mut, bval, cval);
+                break;
+
+              default:
+                closure->stacks[a] = CS_NIL;
+                cs_mutator_raise(mut, cs_mutator_new_string(mut, "Trying to add an unaddable value!", 0, 33, 33));
+                break;
+            }
+            break;
+
+          case CS_OPCODE_CATCH:
+            a = cs_bytecode_get_a(code);
+            closure->stacks[a] = mut->error_register;
+            break;
+
+          case CS_OPCODE_RET:
+            break;
+
+        default:
+          cs_exit(CS_REASON_UNIMPLEMENTED);
           break;
-
-      default:
-        cs_exit(CS_REASON_UNIMPLEMENTED);
-        break;
+      }
+      // Error was raised
+      if (cs_unlikely(mut->error)) {
+        // redirect to exception handler
+        if (closure->cur_func->resq) {
+          mut->error = false;
+          closure->pc = -1; // This is needed
+          closure->ncodes = closure->cur_func->resq->length;
+          closure->codes = (uintptr_t*) closure->cur_func->resq->buckets;
+        }
+      }
     }
+    cs_free_object(closure);
+    closure = cs_list_pop_back(mut->stack);
   }
-
-  closure = cs_list_pop_back(mut->stack);
-  cs_free_object(closure);
   return 0;
 }

@@ -38,6 +38,7 @@ typedef enum CsOpcode {
   CS_OPCODE_CALL,    // call A B C  -> R[A], ... R[A+C-2] = R[A](R[A+B-1])
   CS_OPCODE_RET,     // ret A B     -> return R[A], ... R[A+B-2]
   CS_OPCODE_RAISE,   // raise A     -> e = R[A] goto RESQ
+  CS_OPCODE_CATCH,   // catch A     -> R[A] = e
   CS_OPCODE_SPWN,    // spwn A IMM  -> R[A] = T.append(new thread(F[IMM]))
   CS_OPCODE_SEND,    // send A B    -> R[A].push_back(copymutable R[B])
   CS_OPCODE_RECV,    // recv A B    -> R[A] = R[B].pop_front()
@@ -119,6 +120,7 @@ typedef struct CsByteFunction {
   CsArray* funcs;
   CsArray* codes;
   CsArray* consts;
+  CsArray* resq;
 } CsByteFunction;
 
 /**

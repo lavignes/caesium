@@ -7,6 +7,10 @@
   ret 0 1
 
   .resq
-  
+    .const 'Rescue from error:'
+    loadk 0 2
+    puts 0
+    catch 0
+    puts 0
   .end
 .end

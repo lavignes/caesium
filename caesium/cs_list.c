@@ -96,11 +96,15 @@ void* cs_list_pop_front(CsList* list) {
 }
 
 void* cs_list_peek_back(CsList* list) {
-  return list->tail->data;
+  if (cs_likely(list->tail))
+    return list->tail->data;
+  return NULL;
 }
 
 void* cs_list_peek_front(CsList* list) {
-  return list->head->data;
+  if (cs_likely(list->head))
+    return list->head->data;
+  return NULL;
 }
 
 void cs_list_traverse(CsList* list, bool(*fn)(void*, void*), void* data) {

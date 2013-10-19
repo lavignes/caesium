@@ -16,6 +16,7 @@ typedef struct CsMutator {
   int (*entry_point)(struct CsMutator*, void*);
   void* data;
 
+  bool error;
   CsList* error_stack; // error handling stack
   CsValue error_register;
 
@@ -62,5 +63,7 @@ void cs_mutator_start(
  * @return thread return value
  */
 int cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk);
+
+void cs_mutator_raise(CsMutator* mut, CsValue error);
 
 #endif /* _CS_MUTATOR_H_ */
