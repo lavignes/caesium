@@ -259,6 +259,11 @@ int cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
             }
             break;
 
+          case CS_OPCODE_RAISE:
+            a = cs_bytecode_get_a(code);
+            cs_mutator_raise(mut, closure->stacks[a]);
+            break;
+
           case CS_OPCODE_CATCH:
             a = cs_bytecode_get_a(code);
             closure->stacks[a] = mut->error_register;
