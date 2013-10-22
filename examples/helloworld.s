@@ -1,8 +1,7 @@
 # PUS params upvals stacks
 .entry 0 0 1
-  .const 'Object'
-  loadg 0 0
-  add 0 0 0
+  .const nil
+  add 0 256 256
   puts 0
   ret 0 1
 

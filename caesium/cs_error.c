@@ -15,6 +15,9 @@ static CsValue error_as_string(CsMutator* mut, CsValue self) {
       cs_utf8_strnlen(self->klass->classname, -1));
   }
   str = cs_mutator_value_as_string(mut, what);
+  // Propagate the found exception
+  if (cs_unlikely(str == NULL))
+    return NULL;
   return cs_mutator_new_string_formatted(mut,
     "%s: %s", self->klass->classname, cs_value_tostring(str));
 }

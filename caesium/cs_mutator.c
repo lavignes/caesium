@@ -296,8 +296,10 @@ int cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
 
         case CS_OPCODE_PUTS:
           a = cs_bytecode_get_a(code);
+          // value_as_string can return NULL if an exception occurs
           temp1 = cs_mutator_value_as_string(mut, closure->stacks[a]);
-          printf("%s\n", cs_value_tostring(temp1));
+          if (cs_likely(temp1 != NULL))
+            printf("%s\n", cs_value_tostring(temp1));
           break;
 
         case CS_OPCODE_ADD:
@@ -320,7 +322,7 @@ int cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
               closure->stacks[a] = CS_NIL;
               temp1 = cs_mutator_new_instance(mut, CS_CLASS_TYPEERROR);
               temp2 = cs_mutator_new_string_formatted(mut,
-                "invalid operands for add", konst->u8str);
+                "invalid operands for add");
               cs_hash_insert(temp1->dict, "what", 4, temp2);
               cs_mutator_raise(mut, temp1);
               break;
@@ -363,7 +365,7 @@ int cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
 }
 
 CsValue cs_mutator_value_as_string(CsMutator* mut, CsValue value) {
-  CsValue str;
+  CsValue str, temp1, temp2;
   if (cs_value_isint(value)) {
     return cs_mutator_new_string_formatted(mut,
       "%"PRIiPTR, cs_value_toint(value));
@@ -397,8 +399,21 @@ CsValue cs_mutator_value_as_string(CsMutator* mut, CsValue value) {
 
     case CS_VALUE_INSTANCE:
       str = cs_mutator_member_find(mut, value, "__as_string", 11);
-      if (str && str->type == CS_VALUE_BUILTIN)
-        return str->builtin1(mut, value);
+      if (str) {
+        if (str->type == CS_VALUE_BUILTIN)
+          return str->builtin1(mut, value);
+        else {
+          // __as_string is a key, but cannot be called
+          // This is a classical error
+          temp1 = cs_mutator_new_instance(mut, CS_CLASS_TYPEERROR);
+          temp2 = cs_mutator_copy_string(mut,
+            "__as_string is not callable", 0, 27, 27);
+          cs_hash_insert(temp1->dict, "what", 4, temp2);
+          cs_mutator_raise(mut, temp1);
+          return NULL;
+        } 
+      }
+
       return cs_mutator_new_string_formatted(mut,
         "<Instance of '%s' at %p>", value->klass->classname, value);
       break;
@@ -416,7 +431,7 @@ CsValue cs_mutator_value_as_string(CsMutator* mut, CsValue value) {
   }
 
   cs_assert(false);
-  return CS_NIL;
+  return NULL;
 }
 
 CsValue cs_mutator_member_find(
