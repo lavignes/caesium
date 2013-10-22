@@ -37,7 +37,7 @@ typedef struct CsClosure {
 
 } CsClosure;
 
-CsValue cs_mutator_new_string(
+CsValue cs_mutator_copy_string(
   CsMutator* mut,
   const char* u8str,
   uint32_t hash,

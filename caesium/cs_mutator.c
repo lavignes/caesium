@@ -24,24 +24,27 @@ static CsValue cs_mutator_new_value(CsMutator* mut) {
   }
   // mark the value as used. this is a pretty cheap operation :)
   page = (CsNurseryPage*) cs_value_getpage(value);
-  page->bitmaps[cs_value_getbits(value, page)] &= CS_NURSERY_USED;
+  page->bitmaps[cs_value_getbits(value, page)] |= CS_NURSERY_USED;
   return value;
 }
 
-CsValue cs_mutator_new_string(
+CsValue cs_mutator_copy_string(
   CsMutator* mut,
   const char* u8str,
   uint32_t hash,
   size_t size,
-  size_t length)
-{
+  size_t length) {
+
   CsValue value = cs_mutator_new_value(mut);
   value->type = CS_VALUE_STRING;
   value->hash = hash;
   value->string = cs_alloc_object(CsValueString);
   if (cs_unlikely(value->string == NULL))
     cs_exit(CS_REASON_NOMEM);
-  value->string->u8str = u8str;
+  value->string->u8str = malloc(size+1);
+  if (cs_unlikely(value->string->u8str == NULL))
+    cs_exit(CS_REASON_NOMEM);
+  memcpy((char*) value->string->u8str, u8str, size);
   value->string->size = size;
   value->string->length = length;
   return value;
@@ -219,7 +222,7 @@ static CsValue loadk(CsMutator* mut, CsByteConst* konst) {
       return cs_mutator_new_real(mut, konst->real);
 
     case CS_CONST_TYPE_STRING:
-      return cs_mutator_new_string(mut, konst->u8str,
+      return cs_mutator_copy_string(mut, konst->u8str,
         konst->hash, konst->size, konst->length);
   }
 
@@ -270,7 +273,7 @@ int cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
             closure->stacks[a] = CS_NIL;
             temp1 = cs_mutator_new_instance(mut, CS_CLASS_NAMEERROR);
             temp2 = cs_mutator_new_string_formatted(mut,
-              "Global variable '%s' not found.", konst->u8str);
+              "name '%s' is not defined", konst->u8str);
             cs_hash_insert(temp1->dict, "what", 4, temp2);
             cs_mutator_raise(mut, temp1);
           }
@@ -315,7 +318,10 @@ int cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
 
             default:
               closure->stacks[a] = CS_NIL;
-              temp1 = cs_mutator_new_instance(mut, CS_CLASS_ERROR);
+              temp1 = cs_mutator_new_instance(mut, CS_CLASS_TYPEERROR);
+              temp2 = cs_mutator_new_string_formatted(mut,
+                "invalid operands for add", konst->u8str);
+              cs_hash_insert(temp1->dict, "what", 4, temp2);
               cs_mutator_raise(mut, temp1);
               break;
           }
@@ -364,15 +370,15 @@ CsValue cs_mutator_value_as_string(CsMutator* mut, CsValue value) {
   }
   switch (value->type) {
     case CS_VALUE_NIL:
-      return cs_mutator_new_string(mut, "nil", 0, 3, 3);
+      return cs_mutator_copy_string(mut, "nil", 0, 3, 3);
       break;
 
     case CS_VALUE_TRUE:
-      return cs_mutator_new_string(mut, "true", 0, 4, 4);
+      return cs_mutator_copy_string(mut, "true", 0, 4, 4);
       break;
 
     case CS_VALUE_FALSE:
-      return cs_mutator_new_string(mut, "false", 0, 5, 5);
+      return cs_mutator_copy_string(mut, "false", 0, 5, 5);
       break;
 
     case CS_VALUE_REAL:
@@ -391,14 +397,20 @@ CsValue cs_mutator_value_as_string(CsMutator* mut, CsValue value) {
 
     case CS_VALUE_INSTANCE:
       str = cs_mutator_member_find(mut, value, "__as_string", 11);
-      if (str)
+      if (str && str->type == CS_VALUE_BUILTIN)
         return str->builtin1(mut, value);
       return cs_mutator_new_string_formatted(mut,
         "<Instance of '%s' at %p>", value->klass->classname, value);
       break;
 
+    case CS_VALUE_BUILTIN:
+      return cs_mutator_new_string_formatted(mut,
+        "<Builtin at %p>", value);
+      break;
+
     default:
-      cs_error("Can't print that!\n");
+      return cs_mutator_new_string_formatted(mut,
+        "<Value at %p>", value);
       cs_exit(CS_REASON_UNIMPLEMENTED);
       break;
   }

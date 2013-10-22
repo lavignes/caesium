@@ -16,5 +16,10 @@ CsNurseryPage* cs_nursery_new_page() {
 }
 
 void cs_nursery_free_page(CsNurseryPage* page) {
+  int i;
+  for (i = 0; i < CS_NURSERY_PAGE_MAX; i++) {
+    if (page->bitmaps[i] & CS_NURSERY_USED)
+      cs_value_cleanup(page->values + i);
+  }
   free(page);
 }

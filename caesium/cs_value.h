@@ -79,4 +79,6 @@ extern CsValue CS_FALSE;
 #define cs_value_getbits(value, page) \
   ((((uintptr_t) value) - ((uintptr_t) page->values)) >> 0x5)
 
+void cs_value_cleanup(CsValue value);
+
 #endif /* _CS_VALUE_H_ */

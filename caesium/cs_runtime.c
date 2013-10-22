@@ -92,19 +92,19 @@ static void create_classes(CsRuntime* cs, CsMutator* mut) {
     strlen(CS_CLASS_NAMEERROR->classname),
     CS_CLASS_NAMEERROR);
 
-  // create number class
-  cs_initclass_number(mut);
+  // create typeerror class
+  cs_initclass_typeerror(mut);
   cs_hash_insert(cs->globals,
-    CS_CLASS_NUMBER->classname,
-    strlen(CS_CLASS_NUMBER->classname),
-    CS_CLASS_NUMBER);
+    CS_CLASS_TYPEERROR->classname,
+    strlen(CS_CLASS_TYPEERROR->classname),
+    CS_CLASS_TYPEERROR);
 }
 
 static void cleanup_classes() {
   cs_freeclass_object(CS_CLASS_OBJECT);
   cs_freeclass_error(CS_CLASS_ERROR);
   cs_freeclass_error(CS_CLASS_NAMEERROR);
-  cs_freeclass_number(CS_CLASS_NUMBER);
+  cs_freeclass_error(CS_CLASS_TYPEERROR);
 }
 
 void cs_runtime_doassembly(CsRuntime* cs, const char* u8str, size_t size) {
