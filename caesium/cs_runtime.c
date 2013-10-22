@@ -4,6 +4,10 @@
 #include "cs_assembler.h"
 #include "cs_value.h"
 
+#include "cs_object.h"
+#include "cs_error.h"
+#include "cs_numeric.h"
+
 extern void setup_assembler();
 extern void shutdown_assembler();
 
@@ -66,9 +70,40 @@ void cs_runtime_dostring(CsRuntime* cs, const char* u8str) {
   // free((void*) u8str);
 }
 
+static void create_classes(CsRuntime* cs, CsMutator* mut) {
+  // create object class
+  cs_initclass_object(mut);
+  cs_hash_insert(cs->globals,
+    CS_CLASS_OBJECT->classname,
+    strlen(CS_CLASS_OBJECT->classname),
+    CS_CLASS_OBJECT);
+
+  // create error class
+  cs_initclass_error(mut);
+  cs_hash_insert(cs->globals,
+    CS_CLASS_ERROR->classname,
+    strlen(CS_CLASS_ERROR->classname),
+    CS_CLASS_ERROR);
+
+  // create number class
+  cs_initclass_number(mut);
+  cs_hash_insert(cs->globals,
+    CS_CLASS_NUMBER->classname,
+    strlen(CS_CLASS_NUMBER->classname),
+    CS_CLASS_NUMBER);
+}
+
+static void cleanup_classes() {
+  cs_freeclass_object(CS_CLASS_OBJECT);
+  cs_freeclass_error(CS_CLASS_ERROR);
+  cs_freeclass_number(CS_CLASS_NUMBER);
+}
+
 void cs_runtime_doassembly(CsRuntime* cs, const char* u8str, size_t size) {
   CsMutator* mut0 = cs_mutator_new(cs);
   cs_list_push_back(cs->mutators, mut0);
+
+  create_classes(cs, mut0);
 
   CsAssembler* assembler = cs_assembler_new();
   CsByteChunk* chunk = cs_assembler_assemble(assembler, u8str, size);
@@ -78,6 +113,8 @@ void cs_runtime_doassembly(CsRuntime* cs, const char* u8str, size_t size) {
 
   if (thrd_join(mut0->thread, NULL) != thrd_success)
     cs_exit(CS_REASON_THRDFATAL);
+
+  cleanup_classes();
 
   cs_bytechunk_free(chunk);
 }

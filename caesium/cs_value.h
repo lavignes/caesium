@@ -14,6 +14,7 @@ typedef enum CsValueType {
   CS_VALUE_STRING,
   CS_VALUE_CLASS,
   CS_VALUE_INSTANCE,
+  CS_VALUE_BUILTIN,
 } CsValueType;
 
 typedef struct CsValueString {
@@ -22,13 +23,34 @@ typedef struct CsValueString {
   const char* u8str;
 } CsValueString;
 
+struct CsMutator;
+typedef struct CsValueStruct* CsValue;
+
+typedef CsValue (*CsBuiltin0)(struct CsMutator*);
+typedef CsValue (*CsBuiltin1)(struct CsMutator*,CsValue);
+typedef CsValue (*CsBuiltin2)(struct CsMutator*,CsValue,CsValue);
+typedef CsValue (*CsBuiltin3)(struct CsMutator*,CsValue,CsValue,CsValue);
+
 typedef struct CsValueStruct {
   union {
     struct {
       CsValueType type;
       uint32_t hash;
-      CsHash* klass;
       union {
+        struct {
+          struct CsValueStruct** bases;
+          const char* classname;
+        };
+        CsValue klass;
+      };
+      union {
+        union {
+          CsBuiltin0 builtin0;
+          CsBuiltin1 builtin1;
+          CsBuiltin2 builtin2;
+          CsBuiltin3 builtin3;
+        };
+        CsHash* dict;
         double real;
         CsValueString* string;
       };
@@ -37,17 +59,10 @@ typedef struct CsValueStruct {
   };
 } CsValueStruct;
 
-typedef struct CsValueStruct* CsValue;
 
 extern CsValue CS_TRUE;
 extern CsValue CS_FALSE;
 extern CsValue CS_NIL;
-
-extern CsValue CS_CLASS_OBJECT;
-extern CsValue CS_CLASS_INT;
-extern CsValue CS_CLASS_REAL;
-extern CsValue CS_CLASS_STRING;
-
 
 // test whether a value is an integer
 #define cs_value_isint(value) (((intptr_t) value) & 0x1)

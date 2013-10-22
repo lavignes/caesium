@@ -17,7 +17,6 @@ typedef struct CsMutator {
   void* data;
 
   bool error;
-  CsList* error_stack; // error handling stack
   CsValue error_register;
 
   CsList* stack;
@@ -46,6 +45,19 @@ CsValue cs_mutator_new_string(
   size_t length);
   
 CsValue cs_mutator_new_real(CsMutator* mut, double real);
+
+CsValue cs_mutator_new_class(
+  CsMutator* mut,
+  const char* name,
+  CsHash* dict,
+  CsValue* bases);
+
+CsValue cs_mutator_new_builtin0(CsMutator* mut, CsBuiltin0 builtin0);
+CsValue cs_mutator_new_builtin1(CsMutator* mut, CsBuiltin1 builtin1);
+CsValue cs_mutator_new_builtin2(CsMutator* mut, CsBuiltin2 builtin2);
+CsValue cs_mutator_new_builtin3(CsMutator* mut, CsBuiltin3 builtin3);
+
+CsValue cs_mutator_new_instance(CsMutator* mut, CsValue klass);
 
 CsMutator* cs_mutator_new(CsRuntime* cs);
 

@@ -2,6 +2,7 @@
 
 #include "cs_mutator.h"
 #include "cs_numeric.h"
+#include "cs_error.h"
 
 static int mut_main(void* data) {
   CsMutator* mut = data;
@@ -52,6 +53,55 @@ CsValue cs_mutator_new_real(CsMutator* mut, double real) {
   return value;
 }
 
+CsValue cs_mutator_new_class(
+  CsMutator* mut,
+  const char* name,
+  CsHash* dict,
+  CsValue* bases)
+{
+  CsValue value = cs_mutator_new_value(mut);
+  value->type = CS_VALUE_CLASS;
+  value->classname = name;
+  value->dict = dict;
+  value->bases = bases;
+  return value;
+}
+
+CsValue cs_mutator_new_builtin0(CsMutator* mut, CsBuiltin0 builtin0) {
+  CsValue value = cs_mutator_new_value(mut);
+  value->type = CS_VALUE_BUILTIN;
+  value->builtin0 = builtin0;
+  return value;
+}
+
+CsValue cs_mutator_new_builtin1(CsMutator* mut, CsBuiltin1 builtin1) {
+  CsValue value = cs_mutator_new_value(mut);
+  value->type = CS_VALUE_BUILTIN;
+  value->builtin1 = builtin1;
+  return value;
+}
+
+CsValue cs_mutator_new_builtin2(CsMutator* mut, CsBuiltin2 builtin2) {
+  CsValue value = cs_mutator_new_value(mut);
+  value->type = CS_VALUE_BUILTIN;
+  value->builtin2 = builtin2;
+  return value;
+}
+
+CsValue cs_mutator_new_builtin3(CsMutator* mut, CsBuiltin3 builtin3) {
+  CsValue value = cs_mutator_new_value(mut);
+  value->type = CS_VALUE_BUILTIN;
+  value->builtin3 = builtin3;
+  return value;
+}
+
+CsValue cs_mutator_new_instance(CsMutator* mut, CsValue klass) {
+  CsValue value = cs_mutator_new_value(mut);
+  value->type = CS_VALUE_INSTANCE;
+  value->klass = klass;
+  return value;
+}
+
 CsMutator* cs_mutator_new(CsRuntime* cs) {
   int i;
   CsMutator* mut = cs_alloc_object(CsMutator);
@@ -61,7 +111,6 @@ CsMutator* cs_mutator_new(CsRuntime* cs) {
   mut->cs = cs;
 
   mut->error = false;
-  mut->error_stack = cs_list_new();
   mut->error_register = CS_NIL;
   mut->stack = cs_list_new();
 
@@ -90,7 +139,6 @@ void cs_mutator_free(CsMutator* mut) {
   cs_list_traverse(mut->nursery, free_page, NULL);
   cs_list_free(mut->nursery);
   cs_list_free(mut->freelist);
-  cs_list_free(mut->error_stack);
   cs_free_object(mut);
 }
 
@@ -157,7 +205,7 @@ static CsValue loadk(CsMutator* mut, CsByteConst* konst) {
 int cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
   CsByteConst* konst;
   CsPair* pair;
-  CsValue bval, cval;
+  CsValue bval, cval, temp1;
   int a, b, c;
 
   CsClosure* closure = create_stack_frame(chunk->entry);
@@ -236,6 +284,22 @@ int cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
             case CS_VALUE_STRING:
               printf("%s\n", cs_value_tostring(closure->stacks[a]));
               break;
+
+            case CS_VALUE_CLASS:
+              printf("<Class '%s' at %p>\n", closure->stacks[a]->classname,
+                closure->stacks[a]);
+              break;
+
+            case CS_VALUE_INSTANCE:
+              printf("<Instance of '%s' at %p>\n",
+                closure->stacks[a]->klass->classname,
+                closure->stacks[a]);
+              break;
+
+            default:
+              cs_error("Can't print that!\n");
+              cs_exit(CS_REASON_UNIMPLEMENTED);
+              break;
           }
           break;
 
@@ -257,7 +321,8 @@ int cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
 
               default:
                 closure->stacks[a] = CS_NIL;
-                cs_mutator_raise(mut, cs_mutator_new_string(mut, "Trying to add an unaddable value!", 0, 33, 33));
+                temp1 = cs_mutator_new_instance(mut, CS_CLASS_ERROR);
+                cs_mutator_raise(mut, temp1);
                 break;
             }
             break;
