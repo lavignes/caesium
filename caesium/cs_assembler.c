@@ -195,7 +195,7 @@ CsByteChunk* cs_assembler_assemble(
                   cs_exit(CS_REASON_NOMEM);
                 konst->type = CS_CONST_TYPE_STRING;
                 // intercept the buffer
-                konst->string = buffer;
+                konst->u8str = buffer;
                 konst->size = strlen(buffer);
                 konst->length = cs_utf8_strnlen(buffer, konst->size);
                 konst->hash = XXH32(buffer, konst->size, 0xdeadface);

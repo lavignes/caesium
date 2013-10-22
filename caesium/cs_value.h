@@ -2,6 +2,7 @@
 #define _CS_VALUE_H_
 
 #include "cs_common.h"
+#include "cs_hash.h"
 
 #define CS_VALUE_SIZE 32
 
@@ -11,23 +12,28 @@ typedef enum CsValueType {
   CS_VALUE_FALSE,
   CS_VALUE_REAL,
   CS_VALUE_STRING,
+  CS_VALUE_CLASS,
+  CS_VALUE_INSTANCE,
 } CsValueType;
+
+typedef struct CsValueString {
+  size_t size;
+  size_t length;
+  const char* u8str;
+} CsValueString;
 
 typedef struct CsValueStruct {
   union {
     struct {
       CsValueType type;
       uint32_t hash;
+      CsHash* klass;
       union {
         double real;
-        struct {
-          size_t size;
-          size_t length;
-          const char* string;
-        };
+        CsValueString* string;
       };
     };
-    uint8_t padding[32];
+    uint8_t padding[CS_VALUE_SIZE];
   };
 } CsValueStruct;
 
@@ -37,13 +43,19 @@ extern CsValue CS_TRUE;
 extern CsValue CS_FALSE;
 extern CsValue CS_NIL;
 
+extern CsValue CS_CLASS_OBJECT;
+extern CsValue CS_CLASS_INT;
+extern CsValue CS_CLASS_REAL;
+extern CsValue CS_CLASS_STRING;
+
+
 // test whether a value is an integer
 #define cs_value_isint(value) (((intptr_t) value) & 0x1)
 #define cs_value_toint(value) (((intptr_t) value) >> 0x1)
 #define cs_value_fromint(i) ((CsValue) ((((intptr_t) i) << 0x1) | 0x1))
 
 #define cs_value_toreal(value) ((double) value->real)
-#define cs_value_tostring(value) ((const char*) value->string)
+#define cs_value_tostring(value) (value->string->u8str)
 
 // Returns the address of a page given a value :)
 #define cs_value_getpage(value) (((uintptr_t) value) & ~((uintptr_t) 0x3FFF))

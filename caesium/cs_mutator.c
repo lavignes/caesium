@@ -35,10 +35,13 @@ CsValue cs_mutator_new_string(
 {
   CsValue value = cs_mutator_new_value(mut);
   value->type = CS_VALUE_STRING;
-  value->string = u8str;
   value->hash = hash;
-  value->size = size;
-  value->length = length;
+  value->string = cs_alloc_object(CsValueString);
+  if (cs_unlikely(value->string == NULL))
+    cs_exit(CS_REASON_NOMEM);
+  value->string->u8str = u8str;
+  value->string->size = size;
+  value->string->length = length;
   return value;
 }
 
@@ -141,7 +144,7 @@ static CsValue loadk(CsMutator* mut, CsByteConst* konst) {
       return cs_mutator_new_real(mut, konst->real);
 
     case CS_CONST_TYPE_STRING:
-      return cs_mutator_new_string(mut, konst->string,
+      return cs_mutator_new_string(mut, konst->u8str,
         konst->hash, konst->size, konst->length);
   }
 
@@ -185,7 +188,7 @@ int cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
           b = cs_bytecode_get_b(code);
           konst = closure->cur_func->consts->buckets[b];
           mtx_lock(&mut->cs->globals_lock);
-          pair = cs_hash_find(mut->cs->globals, konst->string, konst->size);
+          pair = cs_hash_find(mut->cs->globals, konst->u8str, konst->size);
           mtx_unlock(&mut->cs->globals_lock);
           if (cs_likely(pair != NULL))
             closure->stacks[a] = pair->value;
@@ -201,7 +204,7 @@ int cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
           mtx_lock(&mut->cs->globals_lock);
           cs_hash_insert(
             mut->cs->globals,
-            konst->string,
+            konst->u8str,
             konst->size,
             closure->stacks[a]);
           mtx_unlock(&mut->cs->globals_lock);
@@ -267,6 +270,7 @@ int cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
           case CS_OPCODE_CATCH:
             a = cs_bytecode_get_a(code);
             closure->stacks[a] = mut->error_register;
+            mut->error_register = CS_NIL;
             break;
 
           case CS_OPCODE_RET:

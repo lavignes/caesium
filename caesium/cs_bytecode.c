@@ -27,7 +27,7 @@ void cs_bytechunk_free(CsByteChunk* chunk) {
 static bool free_const(void* konst_ptr, void* data) {
   CsByteConst* konst = konst_ptr;
   if (konst->type == CS_CONST_TYPE_STRING) {
-    cs_free_object(konst->string);
+    cs_free_object((char*) konst->u8str);
   }
   cs_free_object(konst);
   return false;

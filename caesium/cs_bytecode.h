@@ -98,12 +98,12 @@ typedef enum CsByteConstType {
  */
 typedef struct CsByteConst {
   CsByteConstType type;
+  uint32_t hash;
   union {
     struct {
-      uint32_t hash;
       size_t size;
       size_t length;
-      char* string;
+      const char* u8str;
     };
     uint32_t integer;
     double real;
