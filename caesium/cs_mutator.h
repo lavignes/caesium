@@ -43,14 +43,19 @@ CsValue cs_mutator_new_string(
   uint32_t hash,
   size_t size,
   size_t length);
-  
+
+CsValue cs_mutator_new_string_formatted(
+  CsMutator* mut,
+  const char* format,
+  ...);
+
 CsValue cs_mutator_new_real(CsMutator* mut, double real);
 
 CsValue cs_mutator_new_class(
   CsMutator* mut,
   const char* name,
   CsHash* dict,
-  CsValue* bases);
+  CsArray* bases);
 
 CsValue cs_mutator_new_builtin0(CsMutator* mut, CsBuiltin0 builtin0);
 CsValue cs_mutator_new_builtin1(CsMutator* mut, CsBuiltin1 builtin1);
@@ -77,5 +82,23 @@ void cs_mutator_start(
 int cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk);
 
 void cs_mutator_raise(CsMutator* mut, CsValue error);
+
+CsValue cs_mutator_value_as_string(CsMutator* mut, CsValue value);
+
+/**
+ * Locates a member in a value.
+ * This searches the value's local dictionary, class
+ * dictionary, and all inherited class dictionaries.
+ * @param  mut      a mutator
+ * @param  instance an instance
+ * @param  key      field name
+ * @param  key_sz   field name size
+ * @return          matched value or NULL if not found
+ */
+CsValue cs_mutator_member_find(
+  CsMutator* mut,
+  CsValue instance,
+  const char* key,
+  size_t key_sz);
 
 #endif /* _CS_MUTATOR_H_ */

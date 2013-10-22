@@ -3,6 +3,7 @@
 
 #include "cs_common.h"
 #include "cs_hash.h"
+#include "cs_array.h"
 
 #define CS_VALUE_SIZE 32
 
@@ -38,7 +39,7 @@ typedef struct CsValueStruct {
       uint32_t hash;
       union {
         struct {
-          struct CsValueStruct** bases;
+          CsArray* bases;
           const char* classname;
         };
         CsValue klass;
@@ -60,9 +61,9 @@ typedef struct CsValueStruct {
 } CsValueStruct;
 
 
+extern CsValue CS_NIL;
 extern CsValue CS_TRUE;
 extern CsValue CS_FALSE;
-extern CsValue CS_NIL;
 
 // test whether a value is an integer
 #define cs_value_isint(value) (((intptr_t) value) & 0x1)

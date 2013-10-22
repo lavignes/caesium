@@ -5,8 +5,12 @@
 #include "cs_value.h"
 
 extern CsValue CS_CLASS_ERROR;
+extern CsValue CS_CLASS_NAMEERROR;
 
 CsValue cs_initclass_error(CsMutator* mut);
 void cs_freeclass_error(CsValue klass);
+
+CsValue cs_initclass_nameerror(CsMutator* mut);
+void cs_freeclass_nameerror(CsValue klass);
 
 #endif /* _CS_ERROR_H_ */

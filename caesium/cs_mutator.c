@@ -3,6 +3,7 @@
 #include "cs_mutator.h"
 #include "cs_numeric.h"
 #include "cs_error.h"
+#include "cs_unicode.h"
 
 static int mut_main(void* data) {
   CsMutator* mut = data;
@@ -46,6 +47,31 @@ CsValue cs_mutator_new_string(
   return value;
 }
 
+CsValue cs_mutator_new_string_formatted(
+  CsMutator* mut,
+  const char* format,
+  ...)
+{
+  va_list args;
+  va_start(args, format);
+  int len;
+  char* buffer = NULL;
+  len = vasprintf(&buffer, format, args);
+  if (cs_unlikely(len == -1))
+    cs_exit(CS_REASON_NOMEM);
+  CsValue value = cs_mutator_new_value(mut);
+  value->type = CS_VALUE_STRING;
+  value->hash = 0;
+  value->string = cs_alloc_object(CsValueString);
+  if (cs_unlikely(value->string == NULL))
+    cs_exit(CS_REASON_NOMEM);
+  value->string->u8str = buffer;
+  value->string->size = len;
+  value->string->length = cs_utf8_strnlen(buffer, -1);
+  va_end(args);
+  return value;
+}
+
 CsValue cs_mutator_new_real(CsMutator* mut, double real) {
   CsValue value = cs_mutator_new_value(mut);
   value->type = CS_VALUE_REAL;
@@ -57,7 +83,7 @@ CsValue cs_mutator_new_class(
   CsMutator* mut,
   const char* name,
   CsHash* dict,
-  CsValue* bases)
+  CsArray* bases)
 {
   CsValue value = cs_mutator_new_value(mut);
   value->type = CS_VALUE_CLASS;
@@ -99,6 +125,7 @@ CsValue cs_mutator_new_instance(CsMutator* mut, CsValue klass) {
   CsValue value = cs_mutator_new_value(mut);
   value->type = CS_VALUE_INSTANCE;
   value->klass = klass;
+  value->dict = cs_hash_new();
   return value;
 }
 
@@ -205,7 +232,7 @@ static CsValue loadk(CsMutator* mut, CsByteConst* konst) {
 int cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
   CsByteConst* konst;
   CsPair* pair;
-  CsValue bval, cval, temp1;
+  CsValue bval, cval, temp1, temp2;
   int a, b, c;
 
   CsClosure* closure = create_stack_frame(chunk->entry);
@@ -238,11 +265,17 @@ int cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
           mtx_lock(&mut->cs->globals_lock);
           pair = cs_hash_find(mut->cs->globals, konst->u8str, konst->size);
           mtx_unlock(&mut->cs->globals_lock);
-          if (cs_likely(pair != NULL))
-            closure->stacks[a] = pair->value;
-          else
-            // This should raise.... but just return NIL for now
+          if (cs_unlikely(pair == NULL))
+          {
             closure->stacks[a] = CS_NIL;
+            temp1 = cs_mutator_new_instance(mut, CS_CLASS_NAMEERROR);
+            temp2 = cs_mutator_new_string_formatted(mut,
+              "Global variable '%s' not found.", konst->u8str);
+            cs_hash_insert(temp1->dict, "what", 4, temp2);
+            cs_mutator_raise(mut, temp1);
+          }
+          else
+            closure->stacks[a] = pair->value;
           break;
 
         case CS_OPCODE_STORG:
@@ -260,86 +293,47 @@ int cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
 
         case CS_OPCODE_PUTS:
           a = cs_bytecode_get_a(code);
-          if (cs_value_isint(closure->stacks[a])) {
-            printf("%"PRIiPTR"\n", cs_value_toint(closure->stacks[a]));
+          temp1 = cs_mutator_value_as_string(mut, closure->stacks[a]);
+          printf("%s\n", cs_value_tostring(temp1));
+          break;
+
+        case CS_OPCODE_ADD:
+          a = cs_bytecode_get_a(code);
+          b = cs_bytecode_get_b(code);
+          c = cs_bytecode_get_c(code);
+          // Read the args as konst or value
+          bval = load_rk_value(b);
+          cval = load_rk_value(c);
+          if (cs_value_isint(bval)) {
+            closure->stacks[a] = cs_int_add(mut, bval, cval);
             break;
           }
-          switch (closure->stacks[a]->type) {
-            case CS_VALUE_NIL:
-              printf("nil\n");
-              break;
-
-            case CS_VALUE_TRUE:
-              printf("true\n");
-              break;
-
-            case CS_VALUE_FALSE:
-              printf("false\n");
-              break;
-
+          switch (bval->type) {
             case CS_VALUE_REAL:
-              printf("%g\n", cs_value_toreal(closure->stacks[a]));
-              break;
-
-            case CS_VALUE_STRING:
-              printf("%s\n", cs_value_tostring(closure->stacks[a]));
-              break;
-
-            case CS_VALUE_CLASS:
-              printf("<Class '%s' at %p>\n", closure->stacks[a]->classname,
-                closure->stacks[a]);
-              break;
-
-            case CS_VALUE_INSTANCE:
-              printf("<Instance of '%s' at %p>\n",
-                closure->stacks[a]->klass->classname,
-                closure->stacks[a]);
+              closure->stacks[a] = cs_real_add(mut, bval, cval);
               break;
 
             default:
-              cs_error("Can't print that!\n");
-              cs_exit(CS_REASON_UNIMPLEMENTED);
+              closure->stacks[a] = CS_NIL;
+              temp1 = cs_mutator_new_instance(mut, CS_CLASS_ERROR);
+              cs_mutator_raise(mut, temp1);
               break;
           }
           break;
 
-          case CS_OPCODE_ADD:
-            a = cs_bytecode_get_a(code);
-            b = cs_bytecode_get_b(code);
-            c = cs_bytecode_get_c(code);
-            // Read the args as konst or value
-            bval = load_rk_value(b);
-            cval = load_rk_value(c);
-            if (cs_value_isint(bval)) {
-              closure->stacks[a] = cs_int_add(mut, bval, cval);
-              break;
-            }
-            switch (bval->type) {
-              case CS_VALUE_REAL:
-                closure->stacks[a] = cs_real_add(mut, bval, cval);
-                break;
+        case CS_OPCODE_RAISE:
+          a = cs_bytecode_get_a(code);
+          cs_mutator_raise(mut, closure->stacks[a]);
+          break;
 
-              default:
-                closure->stacks[a] = CS_NIL;
-                temp1 = cs_mutator_new_instance(mut, CS_CLASS_ERROR);
-                cs_mutator_raise(mut, temp1);
-                break;
-            }
-            break;
+        case CS_OPCODE_CATCH:
+          a = cs_bytecode_get_a(code);
+          closure->stacks[a] = mut->error_register;
+          mut->error_register = CS_NIL;
+          break;
 
-          case CS_OPCODE_RAISE:
-            a = cs_bytecode_get_a(code);
-            cs_mutator_raise(mut, closure->stacks[a]);
-            break;
-
-          case CS_OPCODE_CATCH:
-            a = cs_bytecode_get_a(code);
-            closure->stacks[a] = mut->error_register;
-            mut->error_register = CS_NIL;
-            break;
-
-          case CS_OPCODE_RET:
-            break;
+        case CS_OPCODE_RET:
+          break;
 
         default:
           cs_exit(CS_REASON_UNIMPLEMENTED);
@@ -360,4 +354,86 @@ int cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
     closure = cs_list_pop_back(mut->stack);
   }
   return 0;
+}
+
+CsValue cs_mutator_value_as_string(CsMutator* mut, CsValue value) {
+  CsValue str;
+  if (cs_value_isint(value)) {
+    return cs_mutator_new_string_formatted(mut,
+      "%"PRIiPTR, cs_value_toint(value));
+  }
+  switch (value->type) {
+    case CS_VALUE_NIL:
+      return cs_mutator_new_string(mut, "nil", 0, 3, 3);
+      break;
+
+    case CS_VALUE_TRUE:
+      return cs_mutator_new_string(mut, "true", 0, 4, 4);
+      break;
+
+    case CS_VALUE_FALSE:
+      return cs_mutator_new_string(mut, "false", 0, 5, 5);
+      break;
+
+    case CS_VALUE_REAL:
+      return cs_mutator_new_string_formatted(mut,
+        "%g", cs_value_toreal(value));
+      break;
+
+    case CS_VALUE_STRING:
+      return value;
+      break;
+
+    case CS_VALUE_CLASS:
+      return cs_mutator_new_string_formatted(mut,
+        "<Class '%s' at %p>", value->classname, value);
+      break;
+
+    case CS_VALUE_INSTANCE:
+      str = cs_mutator_member_find(mut, value, "__as_string", 11);
+      if (str)
+        return str->builtin1(mut, value);
+      return cs_mutator_new_string_formatted(mut,
+        "<Instance of '%s' at %p>", value->klass->classname, value);
+      break;
+
+    default:
+      cs_error("Can't print that!\n");
+      cs_exit(CS_REASON_UNIMPLEMENTED);
+      break;
+  }
+
+  cs_assert(false);
+  return CS_NIL;
+}
+
+CsValue cs_mutator_member_find(
+  CsMutator* mut,
+  CsValue instance,
+  const char* key,
+  size_t key_sz)
+{
+  size_t i;
+  CsArray* bases;
+  CsValue ret;
+  // Check in local dictionary
+  CsPair* pair = cs_hash_find(instance->dict, key, key_sz);
+  if (pair)
+    return pair->value;
+  if (instance->type == CS_VALUE_INSTANCE) {
+    // Check class dictionary
+    pair = cs_hash_find(instance->klass->dict, key, key_sz);
+    if (pair)
+      return pair->value;
+
+    bases = instance->klass->bases;
+  }
+  else bases = instance->bases;
+  // Recursively scan base classes for member
+  for (i = 0; i < bases->length; i++) {
+    ret = cs_mutator_member_find(mut, bases->buckets[i], key, key_sz);
+    if (ret)
+      return ret;
+  }
+  return NULL;
 }

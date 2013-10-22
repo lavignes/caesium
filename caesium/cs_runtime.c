@@ -85,6 +85,13 @@ static void create_classes(CsRuntime* cs, CsMutator* mut) {
     strlen(CS_CLASS_ERROR->classname),
     CS_CLASS_ERROR);
 
+  // create nameerror class
+  cs_initclass_nameerror(mut);
+  cs_hash_insert(cs->globals,
+    CS_CLASS_NAMEERROR->classname,
+    strlen(CS_CLASS_NAMEERROR->classname),
+    CS_CLASS_NAMEERROR);
+
   // create number class
   cs_initclass_number(mut);
   cs_hash_insert(cs->globals,
@@ -96,6 +103,7 @@ static void create_classes(CsRuntime* cs, CsMutator* mut) {
 static void cleanup_classes() {
   cs_freeclass_object(CS_CLASS_OBJECT);
   cs_freeclass_error(CS_CLASS_ERROR);
+  cs_freeclass_error(CS_CLASS_NAMEERROR);
   cs_freeclass_number(CS_CLASS_NUMBER);
 }
 
