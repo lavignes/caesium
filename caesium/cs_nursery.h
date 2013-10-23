@@ -15,8 +15,8 @@ typedef enum CsNurseryFlags {
 typedef struct CsNurseryPage {
 
   uint8_t bitmaps[CS_NURSERY_PAGE_MAX];
-  uint64_t nvalues;
   uint64_t padding;
+  uint64_t padding2;
   CsValueStruct values[CS_NURSERY_PAGE_MAX];
 
 } CsNurseryPage;

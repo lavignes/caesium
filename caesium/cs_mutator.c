@@ -464,3 +464,44 @@ CsValue cs_mutator_member_find(
   }
   return NULL;
 }
+
+/*
+void cs_nursery_mark_page(CsNurseryPage* page) {
+  int i;
+  for (i = 0; i < CS_NURSERY_PAGE_MAX; i++) {
+    if (page->bitmaps[i] & CS_NURSERY_USED) {
+      if ((page->bitmaps[i] & CS_NURSERY_MARK) == false) {
+        page->bitmaps[i] |= CS_NURSERY_MARK;
+        switch (page->values[i]->type) {
+          case CS_VALUE_INSTANCE:
+            
+          break;
+        }
+      }
+    }
+  }
+}*/
+
+// static bool mark_globals(CsPair* pair, CsMutator* mut) {
+//   CsNurseryPage* page;
+//   page = (CsNurseryPage*) cs_value_getpage(pair->value);
+//   if (!(page->bitmaps[cs_value_getbits(pair->value, page)] & CS_NURSERY_MARK)) {
+//     page->bitmaps[cs_value_getbits(pair->value, page)] |= CS_NURSERY_MARK;
+//   }
+//   mtx_unlock(&page->cs->global_lock);
+//   return false;
+// }
+
+// static void mutator_mark(CsMutator* mut) {
+
+//   // First mark the globals
+//   mtx_lock(&mut->cs->globals_lock);
+//   mtx_lock(&mut->cs->global_lock);
+
+//   cs_hash_traverse(mut->cs->globals, (bool (*)(CsPair*,void*)) mark_hash, mut);
+//   mtx_unlock(&mut->cs->globals_lock);
+// }
+
+// void cs_mutator_collect(CsMutator* mut) {
+
+// }
