@@ -18,7 +18,9 @@ void cs_mutator_raise(CsMutator* mut, CsValue error) {
 
 static CsValue cs_mutator_new_value(CsMutator* mut) {
   CsNurseryPage* page;
-  CsValue value = cs_list_pop_front(mut->freelist);
+  CsValue value;
+  int i;
+  try_again: value = cs_list_pop_front(mut->freelist);
   if (value == NULL) {
     // Begin garbage collection
     
@@ -28,24 +30,32 @@ static CsValue cs_mutator_new_value(CsMutator* mut) {
     // Fortunately, if we were in the middle of something, it shouldn't matter
     // since they are not allowed to free our variables. But they could
     // mark them.
-    // Now, there could be others like me now waiting. So the current gc thread
-    // MUST only signal the cv to let us through the queue one at a time.
     if (pthread_mutex_trylock(&mut->cs->gc_lock) == EBUSY) {
       sem_post(&mut->cs->gc_sync);
-      // Wait in line :/
       pthread_cond_wait(&mut->cs->gc_done, &mut->gc_cv_mut);
-      pthread_mutex_lock(&mut->cs->gc_lock); // Must recieve the torch
       sem_wait(&mut->cs->gc_sync);
+      goto try_again;
     }
 
     // Now we have full control of the system.
     // We've (safely) stopped the world.
-    
     cs_mutator_mark(mut);
     cs_mutator_sweep(mut);
 
-    pthread_cond_signal(&mut->cs->gc_done);  // wake an heir
-    pthread_mutex_unlock(&mut->cs->gc_lock); // pass the torch
+    pthread_mutex_unlock(&mut->cs->gc_lock);
+    pthread_cond_broadcast(&mut->cs->gc_done);
+
+    value = cs_list_pop_front(mut->freelist);
+    // Still didn't work?
+    if (value == NULL) {
+      // Allocate a new page
+      page = cs_nursery_new_page();
+      cs_list_push_back(mut->nursery, page);
+      // fill the freelist
+      for (i = 0; i < CS_NURSERY_PAGE_MAX; i++) {
+        cs_list_push_back(mut->freelist, &page->values[i]);
+      }
+    }
   }
   // mark the value as used. this is a pretty cheap operation :)
   page = (CsNurseryPage*) cs_value_getpage(value);
@@ -501,11 +511,19 @@ CsValue cs_mutator_member_find(
   return NULL;
 }
 
+static void mark_value(CsMutator* mut, CsValue value) {
+
+}
+
+static void mark_hash(CsPair* pair, CsMutator* mut) {
+
+}
+
 void cs_mutator_mark(CsMutator* mut) {
   // We have to mark all globals,
   // then mark all by walking up the stack....
   // then we should be clear to sweep
-  
+  cs_hash_traverse(mut->cs->globals, (bool (*)(CsPair*,void*)) mark_hash, mut);
 }
 
 void cs_mutator_sweep(CsMutator* mut) {

@@ -15,6 +15,7 @@ typedef struct CsRuntime {
   pthread_cond_t gc_done;       // Used to relieve gc lock contention
   CsHash* globals;
   CsList* mutators;
+  int nprocs;
 
 } CsRuntime;
 

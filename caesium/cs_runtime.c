@@ -1,3 +1,5 @@
+#include <sys/sysinfo.h>
+
 #include "cs_runtime.h"
 #include "cs_mutator.h"
 #include "cs_lexer.h"
@@ -29,6 +31,7 @@ CsRuntime* cs_runtime_new() {
     cs_exit(CS_REASON_THRDFATAL);
   cs->globals = cs_hash_new();
   cs->mutators = cs_list_new();
+  cs->nprocs = get_nprocs();
   setup_assembler();
   return cs;
 }
