@@ -1,14 +1,18 @@
 #ifndef _CS_RUNTIME_H_
 #define _CS_RUNTIME_H_
 
-#include <tinycthread.h>
+#include <pthread.h>
+#include <semaphore.h>
 
 #include "cs_list.h"
 #include "cs_hash.h"
 
 typedef struct CsRuntime {
 
-  mtx_t globals_lock;
+  pthread_mutex_t globals_lock; // Lock for globals table
+  pthread_mutex_t gc_lock;      // Lock to control the gc state
+  sem_t gc_sync;                // Used to synchronize gc
+  pthread_cond_t gc_done;       // Used to relieve gc lock contention
   CsHash* globals;
   CsList* mutators;
 

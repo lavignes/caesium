@@ -1,7 +1,7 @@
 #ifndef _CS_MUTATOR_H_
 #define _CS_MUTATOR_H_
 
-#include <tinycthread.h>
+#include <pthread.h>
 
 #include "cs_runtime.h"
 #include "cs_assembler.h"
@@ -12,8 +12,9 @@ typedef struct CsMutator {
 
   bool started;
   CsRuntime* cs;
-  thrd_t thread;
-  int (*entry_point)(struct CsMutator*, void*);
+  pthread_t thread;
+  pthread_mutex_t gc_cv_mut; // Used to wait for gc to complete
+  void* (*entry_point)(struct CsMutator*, void*);
   void* data;
 
   bool error;
@@ -70,7 +71,7 @@ void cs_mutator_free(CsMutator* mut);
 
 void cs_mutator_start(
   CsMutator* mut,
-  int (*entry_point)(struct CsMutator*, void*),
+  void* (*entry_point)(struct CsMutator*, void*),
   void* data);
 
 /**
@@ -79,11 +80,12 @@ void cs_mutator_start(
  * @param chunk a bytechunk
  * @return thread return value
  */
-int cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk);
+void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk);
 
 void cs_mutator_raise(CsMutator* mut, CsValue error);
 
-void cs_mutator_collect(CsMutator* mut);
+void cs_mutator_mark(CsMutator* mut);
+void cs_mutator_sweep(CsMutator* mut);
 
 CsValue cs_mutator_value_as_string(CsMutator* mut, CsValue value);
 

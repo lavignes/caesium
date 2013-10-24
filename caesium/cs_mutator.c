@@ -1,11 +1,12 @@
 #include <malloc.h>
+#include <errno.h>
 
 #include "cs_mutator.h"
 #include "cs_numeric.h"
 #include "cs_error.h"
 #include "cs_unicode.h"
 
-static int mut_main(void* data) {
+static void* mut_main(void* data) {
   CsMutator* mut = data;
   return mut->entry_point(mut, mut->data);
 }
@@ -19,8 +20,32 @@ static CsValue cs_mutator_new_value(CsMutator* mut) {
   CsNurseryPage* page;
   CsValue value = cs_list_pop_front(mut->freelist);
   if (value == NULL) {
-    cs_error("Haven't finished expanding the pages yet...\n");
-    cs_exit(CS_REASON_UNIMPLEMENTED);
+    // Begin garbage collection
+    
+    // We have to acquire the gc lock, but another thread could have already
+    // acquired it and is waiting for us to decrement our sem and let their
+    // gc take place. In this case, we must let them have our semaphore.
+    // Fortunately, if we were in the middle of something, it shouldn't matter
+    // since they are not allowed to free our variables. But they could
+    // mark them.
+    // Now, there could be others like me now waiting. So the current gc thread
+    // MUST only signal the cv to let us through the queue one at a time.
+    if (pthread_mutex_trylock(&mut->cs->gc_lock) == EBUSY) {
+      sem_post(&mut->cs->gc_sync);
+      // Wait in line :/
+      pthread_cond_wait(&mut->cs->gc_done, &mut->gc_cv_mut);
+      pthread_mutex_lock(&mut->cs->gc_lock); // Must recieve the torch
+      sem_wait(&mut->cs->gc_sync);
+    }
+
+    // Now we have full control of the system.
+    // We've (safely) stopped the world.
+    
+    cs_mutator_mark(mut);
+    cs_mutator_sweep(mut);
+
+    pthread_cond_signal(&mut->cs->gc_done);  // wake an heir
+    pthread_mutex_unlock(&mut->cs->gc_lock); // pass the torch
   }
   // mark the value as used. this is a pretty cheap operation :)
   page = (CsNurseryPage*) cs_value_getpage(value);
@@ -139,6 +164,9 @@ CsMutator* cs_mutator_new(CsRuntime* cs) {
     cs_exit(CS_REASON_NOMEM);
   mut->started = false;
   mut->cs = cs;
+  if (pthread_mutex_init(&mut->gc_cv_mut, NULL))
+    cs_exit(CS_REASON_THRDFATAL);
+  pthread_mutex_lock(&mut->gc_cv_mut); // We own this
 
   mut->error = false;
   mut->error_register = CS_NIL;
@@ -174,12 +202,12 @@ void cs_mutator_free(CsMutator* mut) {
 
 void cs_mutator_start(
   CsMutator* mut,
-  int (*entry_point)(struct CsMutator*, void*),
+  void* (*entry_point)(struct CsMutator*, void*),
   void* data)
 {
   mut->entry_point = entry_point;
   mut->data = data;
-  if (thrd_create(&mut->thread, mut_main, mut) != thrd_success)
+  if (pthread_create(&mut->thread, NULL, mut_main, mut))
     cs_exit(CS_REASON_THRDFATAL);
 }
 
@@ -232,7 +260,7 @@ static CsValue loadk(CsMutator* mut, CsByteConst* konst) {
 #define load_rk_value(r) (r > 255)? \
   loadk(mut, closure->cur_func->consts->buckets[r - 256]) : closure->stacks[r]
 
-int cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
+void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
   CsByteConst* konst;
   CsPair* pair;
   CsValue bval, cval, temp1, temp2;
@@ -265,9 +293,9 @@ int cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
           a = cs_bytecode_get_a(code);
           b = cs_bytecode_get_b(code);
           konst = closure->cur_func->consts->buckets[b];
-          mtx_lock(&mut->cs->globals_lock);
+          pthread_mutex_lock(&mut->cs->globals_lock);
           pair = cs_hash_find(mut->cs->globals, konst->u8str, konst->size);
-          mtx_unlock(&mut->cs->globals_lock);
+          pthread_mutex_unlock(&mut->cs->globals_lock);
           if (cs_unlikely(pair == NULL))
           {
             closure->stacks[a] = CS_NIL;
@@ -285,13 +313,13 @@ int cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
           a = cs_bytecode_get_a(code);
           b = cs_bytecode_get_b(code);
           konst = closure->cur_func->consts->buckets[b];
-          mtx_lock(&mut->cs->globals_lock);
+          pthread_mutex_unlock(&mut->cs->globals_lock);
           cs_hash_insert(
             mut->cs->globals,
             konst->u8str,
             konst->size,
             closure->stacks[a]);
-          mtx_unlock(&mut->cs->globals_lock);
+          pthread_mutex_unlock(&mut->cs->globals_lock);
           break;
 
         case CS_OPCODE_PUTS:
@@ -357,11 +385,19 @@ int cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
           closure->codes = (uintptr_t*) closure->cur_func->resq->buckets;
         }
       }
+
+      // sync with gc
+      // Essentially, we are giving the gc a chance to take control between
+      // instructions.
+      sem_post(&mut->cs->gc_sync);
+      sem_wait(&mut->cs->gc_sync);
     }
     cs_free_object(closure);
     closure = cs_list_pop_back(mut->stack);
+
   }
-  return 0;
+
+  return NULL;
 }
 
 CsValue cs_mutator_value_as_string(CsMutator* mut, CsValue value) {
@@ -463,6 +499,17 @@ CsValue cs_mutator_member_find(
       return ret;
   }
   return NULL;
+}
+
+void cs_mutator_mark(CsMutator* mut) {
+  // We have to mark all globals,
+  // then mark all by walking up the stack....
+  // then we should be clear to sweep
+  
+}
+
+void cs_mutator_sweep(CsMutator* mut) {
+
 }
 
 /*

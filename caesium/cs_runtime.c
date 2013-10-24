@@ -19,7 +19,13 @@ CsRuntime* cs_runtime_new() {
   CsRuntime* cs = cs_alloc_object(CsRuntime);
   if (cs_unlikely(cs == NULL))
     cs_exit(CS_REASON_NOMEM);
-  if (mtx_init(&cs->globals_lock, mtx_plain) != thrd_success)
+  if (pthread_mutex_init(&cs->globals_lock, NULL))
+    cs_exit(CS_REASON_THRDFATAL);
+  if (pthread_mutex_init(&cs->gc_lock, NULL))
+    cs_exit(CS_REASON_THRDFATAL);
+  if (sem_init(&cs->gc_sync, 0, 0) == -1)
+    cs_exit(CS_REASON_THRDFATAL);
+  if (pthread_cond_init(&cs->gc_done, NULL))
     cs_exit(CS_REASON_THRDFATAL);
   cs->globals = cs_hash_new();
   cs->mutators = cs_list_new();
@@ -117,9 +123,11 @@ void cs_runtime_doassembly(CsRuntime* cs, const char* u8str, size_t size) {
   CsByteChunk* chunk = cs_assembler_assemble(assembler, u8str, size);
   cs_assembler_free(assembler);
 
-  cs_mutator_start(mut0, (int (*)(CsMutator*, void*)) cs_mutator_exec, chunk);
+  // Increase the gc_sync semaphore
+  sem_post(&cs->gc_sync);
+  cs_mutator_start(mut0, (void* (*)(CsMutator*, void*)) cs_mutator_exec, chunk);
 
-  if (thrd_join(mut0->thread, NULL) != thrd_success)
+  if (pthread_join(mut0->thread, NULL))
     cs_exit(CS_REASON_THRDFATAL);
 
   cleanup_classes();
