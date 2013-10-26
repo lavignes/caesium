@@ -17,6 +17,9 @@ typedef struct CsMutator {
   void* (*entry_point)(struct CsMutator*, void*);
   void* data;
 
+  // Current CsValue epoch
+  bool epoch;
+
   bool error;
   CsValue error_register;
 
@@ -84,8 +87,7 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk);
 
 void cs_mutator_raise(CsMutator* mut, CsValue error);
 
-void cs_mutator_mark(CsMutator* mut);
-void cs_mutator_sweep(CsMutator* mut);
+int cs_mutator_collect(CsMutator* mut);
 
 CsValue cs_mutator_value_as_string(CsMutator* mut, CsValue value);
 

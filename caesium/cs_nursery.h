@@ -7,9 +7,10 @@
 #define CS_NURSERY_PAGE_MAX 496
 
 typedef enum CsNurseryFlags {
-  CS_NURSERY_UNUSED = 0x00,
-  CS_NURSERY_USED   = 0x01,
-  CS_NURSERY_MARK   = 0x02,
+  CS_NURSERY_UNUSED      = 0x00,
+  CS_NURSERY_POINTER     = 0x01, 
+  CS_NURSERY_EPOCH       = 0x02,
+  CS_NURSERY_MARK        = 0x04,
 } CsNurseryFlags;
 
 typedef struct CsNurseryPage {

@@ -19,31 +19,15 @@ void cs_mutator_raise(CsMutator* mut, CsValue error) {
 static CsValue cs_mutator_new_value(CsMutator* mut) {
   CsNurseryPage* page;
   CsValue value;
+  uint8_t bits;
   int i;
   try_again: value = cs_list_pop_front(mut->freelist);
   if (value == NULL) {
-    // Begin garbage collection
-    
-    // We have to acquire the gc lock, but another thread could have already
-    // acquired it and is waiting for us to decrement our sem and let their
-    // gc take place. In this case, we must let them have our semaphore.
-    // Fortunately, if we were in the middle of something, it shouldn't matter
-    // since they are not allowed to free our variables. But they could
-    // mark them.
-    if (pthread_mutex_trylock(&mut->cs->gc_lock) == EBUSY) {
-      sem_post(&mut->cs->gc_sync);
-      pthread_cond_wait(&mut->cs->gc_done, &mut->gc_cv_mut);
-      sem_wait(&mut->cs->gc_sync);
+    // Attempt garbage collection
+    // collect will return 1 if your thread couldn't initiate collection.
+    // This usually means another thread did it for you.
+    if (cs_mutator_collect(mut))
       goto try_again;
-    }
-
-    // Now we have full control of the system.
-    // We've (safely) stopped the world.
-    cs_mutator_mark(mut);
-    cs_mutator_sweep(mut);
-
-    pthread_mutex_unlock(&mut->cs->gc_lock);
-    pthread_cond_broadcast(&mut->cs->gc_done);
 
     value = cs_list_pop_front(mut->freelist);
     // Still didn't work?
@@ -55,11 +39,15 @@ static CsValue cs_mutator_new_value(CsMutator* mut) {
       for (i = 0; i < CS_NURSERY_PAGE_MAX; i++) {
         cs_list_push_back(mut->freelist, &page->values[i]);
       }
+      value = cs_list_pop_front(mut->freelist);
     }
   }
   // mark the value as used. this is a pretty cheap operation :)
   page = (CsNurseryPage*) cs_value_getpage(value);
-  page->bitmaps[cs_value_getbits(value, page)] |= CS_NURSERY_USED;
+  bits = page->bitmaps[cs_value_getbits(value, page)];
+  bits |= CS_NURSERY_POINTER;
+  bits &= (~CS_NURSERY_EPOCH) & (mut->epoch << CS_NURSERY_EPOCH);
+
   return value;
 }
 
@@ -177,6 +165,8 @@ CsMutator* cs_mutator_new(CsRuntime* cs) {
   if (pthread_mutex_init(&mut->gc_cv_mut, NULL))
     cs_exit(CS_REASON_THRDFATAL);
   pthread_mutex_lock(&mut->gc_cv_mut); // We own this
+
+  mut->epoch = 0;
 
   mut->error = false;
   mut->error_register = CS_NIL;
@@ -399,6 +389,7 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
       // sync with gc
       // Essentially, we are giving the gc a chance to take control between
       // instructions.
+      mut->epoch = !mut->epoch;
       sem_post(&mut->cs->gc_sync);
       sem_wait(&mut->cs->gc_sync);
     }
@@ -519,15 +510,27 @@ static void mark_hash(CsPair* pair, CsMutator* mut) {
 
 }
 
-void cs_mutator_mark(CsMutator* mut) {
-  // We have to mark all globals,
-  // then mark all by walking up the stack....
-  // then we should be clear to sweep
-  cs_hash_traverse(mut->cs->globals, (bool (*)(CsPair*,void*)) mark_hash, mut);
-}
+int cs_mutator_collect(CsMutator* mut) {
+  // We have to acquire the gc lock, but another thread could have already
+  // acquired it and is waiting for us to decrement our sem and let their
+  // gc take place. In this case, we must let them have our semaphore.
+  if (pthread_mutex_trylock(&mut->cs->gc_lock) == EBUSY) {
+    sem_post(&mut->cs->gc_sync);
+    pthread_cond_wait(&mut->cs->gc_done, &mut->gc_cv_mut);
+    sem_wait(&mut->cs->gc_sync);
+    return 1;
+  }
 
-void cs_mutator_sweep(CsMutator* mut) {
+  // Now we have full control of the system.
+  // We've (safely) stopped the world.
+  cs_debug("Yo DAWG! I heard you like garbage collection.\n");
 
+  // We need to scan the entire root set of each mutator.
+
+
+  pthread_mutex_unlock(&mut->cs->gc_lock);
+  pthread_cond_broadcast(&mut->cs->gc_done);
+  return 0;
 }
 
 /*

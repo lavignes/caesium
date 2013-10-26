@@ -1043,7 +1043,6 @@ CsByteChunk* cs_assembler_assemble(
             buffer = cs_utf8_substr(u8str, start + 1, end);
             if (cs_unlikely(buffer == NULL))
               cs_exit(CS_REASON_NOMEM);
-            cs_debug("label: %s\n", buffer);
             cs_free_object(buffer);
             break;
 
