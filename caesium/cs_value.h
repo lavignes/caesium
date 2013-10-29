@@ -13,6 +13,7 @@ typedef enum CsValueType {
   CS_VALUE_FALSE,
   CS_VALUE_REAL,
   CS_VALUE_STRING,
+  CS_VALUE_ARRAY,
   CS_VALUE_CLASS,
   CS_VALUE_INSTANCE,
   CS_VALUE_BUILTIN,
@@ -52,6 +53,7 @@ typedef struct CsValueStruct {
           CsBuiltin3 builtin3;
         };
         CsHash* dict;
+        CsArray* array;
         double real;
         CsValueString* string;
       };
@@ -70,8 +72,9 @@ extern CsValue CS_FALSE;
 #define cs_value_toint(value) (((intptr_t) value) >> 0x1)
 #define cs_value_fromint(i) ((CsValue) ((((intptr_t) i) << 0x1) | 0x1))
 
-#define cs_value_toreal(value) ((double) value->real)
+#define cs_value_toreal(value) (value->real)
 #define cs_value_tostring(value) (value->string->u8str)
+#define cs_value_toarray(value) (value->array)
 
 // Returns the address of a page given a value :)
 #define cs_value_getpage(value) (((uintptr_t) value) & ~((uintptr_t) 0x3FFF))

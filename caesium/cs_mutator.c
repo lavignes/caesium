@@ -816,7 +816,7 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
               break;
 
             default:
-              // Do nothing if true
+              // Everything else is true
               break;
           }
           break;
@@ -879,11 +879,11 @@ CsValue cs_mutator_value_as_string(CsMutator* mut, CsValue value) {
       break;
 
     case CS_VALUE_TRUE:
-      return cs_mutator_copy_string(mut, "true", 0, 4, 4);
+      return cs_mutator_copy_string(mut, "True", 0, 4, 4);
       break;
 
     case CS_VALUE_FALSE:
-      return cs_mutator_copy_string(mut, "false", 0, 5, 5);
+      return cs_mutator_copy_string(mut, "False", 0, 5, 5);
       break;
 
     case CS_VALUE_REAL:

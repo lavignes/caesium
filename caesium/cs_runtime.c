@@ -10,6 +10,7 @@
 #include "cs_boolean.h"
 #include "cs_numeric.h"
 #include "cs_string.h"
+#include "cs_arrayclass.h"
 #include "cs_error.h"
 
 extern void setup_assembler();
@@ -123,6 +124,13 @@ static void create_classes(CsRuntime* cs, CsMutator* mut) {
     CS_CLASS_STRING->classname,
     strlen(CS_CLASS_STRING->classname),
     CS_CLASS_STRING);
+
+  // create array class
+  cs_initclass_array(mut);
+  cs_hash_insert(cs->globals,
+    CS_CLASS_ARRAY->classname,
+    strlen(CS_CLASS_ARRAY->classname),
+    CS_CLASS_ARRAY);
 
   // create error class
   cs_initclass_error(mut);
