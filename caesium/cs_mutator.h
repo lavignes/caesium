@@ -23,7 +23,6 @@ typedef struct CsMutator {
   bool error;
   CsValue error_register;
 
-  CsList* stack;
   CsList* nursery;
   CsList* freelist;
 
@@ -31,6 +30,7 @@ typedef struct CsMutator {
 
 typedef struct CsClosure {
 
+  struct CsClosure* parent;
   CsByteFunction* cur_func;
   size_t pc;
   uintptr_t* codes;

@@ -2,8 +2,9 @@
 #include <errno.h>
 
 #include "cs_mutator.h"
-#include "cs_numeric.h"
 #include "cs_error.h"
+#include "cs_numeric.h"
+#include "cs_string.h"
 #include "cs_unicode.h"
 
 static void* mut_main(void* data) {
@@ -187,7 +188,6 @@ CsMutator* cs_mutator_new(CsRuntime* cs) {
 
   mut->error = false;
   mut->error_register = CS_NIL;
-  mut->stack = cs_list_new();
 
   mut->nursery = cs_list_new();
   mut->freelist = cs_list_new();
@@ -210,7 +210,6 @@ static bool free_page(void* page, void* data) {
 }
 
 void cs_mutator_free(CsMutator* mut) {
-  cs_list_free(mut->stack);
   cs_list_traverse(mut->nursery, free_page, NULL);
   cs_list_free(mut->nursery);
   cs_list_free(mut->freelist);
@@ -233,6 +232,8 @@ static CsClosure* create_stack_frame(CsByteFunction* func) {
     * (func->nparams + func->nupvals + func->nstacks));
   if (cs_unlikely(closure == NULL))
     cs_exit(CS_REASON_NOMEM);
+
+  closure->parent = NULL;
 
   // Cast closure to void* to prevent heap corruption
   closure->params = ((void*) closure) + sizeof(CsClosure);
@@ -315,9 +316,8 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
           pthread_mutex_unlock(&mut->cs->globals_lock);
           if (cs_unlikely(pair == NULL)) {
             closure->stacks[a] = CS_NIL;
-            temp1 = cs_mutator_easy_error(mut, CS_CLASS_NAMEERROR,
-              "name '%s' is not defined", konst->u8str);
-            cs_mutator_raise(mut, temp1);
+            cs_mutator_raise(mut, cs_mutator_easy_error(mut,
+              CS_CLASS_NAMEERROR, "name '%s' is not defined", konst->u8str));
           }
           else
             closure->stacks[a] = pair->value;
@@ -364,11 +364,71 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
               closure->stacks[a] = temp1;
               break;
 
+            case CS_VALUE_STRING:
+              if ((temp1 = cs_string_add(mut, bval, cval)) == NULL)
+                goto add_error;
+              closure->stacks[a] = temp1;
+              break;
+
+            case CS_VALUE_INSTANCE:
+              temp1 = cs_mutator_member_find(mut, bval, "__add", 5);
+              if (temp1) {
+                if (temp1->type == CS_VALUE_BUILTIN)
+                  closure->stacks[a] = temp1->builtin2(mut, bval, cval);
+                else {
+                  closure->stacks[a] = CS_NIL;
+                  cs_mutator_raise(mut, cs_mutator_easy_error(mut,
+                    CS_CLASS_TYPEERROR, "__add is not callable"));
+                } 
+              }
+              goto add_error;
+              break;
+
             default:
               add_error: closure->stacks[a] = CS_NIL;
-              temp1 = cs_mutator_easy_error(mut, CS_CLASS_TYPEERROR,
-                "invalid operands for add");
-              cs_mutator_raise(mut, temp1);
+              cs_mutator_raise(mut, cs_mutator_easy_error(mut,
+                CS_CLASS_TYPEERROR, "invalid operands for add"));
+              break;
+          }
+          break;
+
+        case CS_OPCODE_SUB:
+          a = cs_bytecode_get_a(code);
+          b = cs_bytecode_get_b(code);
+          c = cs_bytecode_get_c(code);
+          bval = load_rk_value(b);
+          cval = load_rk_value(c);
+          if (cs_value_isint(bval)) {
+            if ((temp1 = cs_int_sub(mut, bval, cval)) == NULL)
+              goto add_error;
+            closure->stacks[a] = temp1;
+            break;
+          }
+          switch (bval->type) {
+            case CS_VALUE_REAL:
+              if ((temp1 = cs_real_sub(mut, bval, cval)) == NULL)
+                goto sub_error;
+              closure->stacks[a] = temp1;
+              break;
+
+            case CS_VALUE_INSTANCE:
+              temp1 = cs_mutator_member_find(mut, bval, "__sub", 5);
+              if (temp1) {
+                if (temp1->type == CS_VALUE_BUILTIN)
+                  closure->stacks[a] = temp1->builtin2(mut, bval, cval);
+                else {
+                  closure->stacks[a] = CS_NIL;
+                  cs_mutator_raise(mut, cs_mutator_easy_error(mut,
+                    CS_CLASS_TYPEERROR, "__sub is not callable"));
+                } 
+              }
+              goto sub_error;
+              break;
+
+            default:
+              sub_error: closure->stacks[a] = CS_NIL;
+              cs_mutator_raise(mut, cs_mutator_easy_error(mut,
+                CS_CLASS_TYPEERROR, "invalid operands for sub"));
               break;
           }
           break;
@@ -409,16 +469,18 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
       sem_post(&mut->cs->gc_sync);
       sem_wait(&mut->cs->gc_sync);
     }
-    cs_free_object(closure);
-    closure = cs_list_pop_back(mut->stack);
 
+    // implicit Return to calling function
+    CsClosure* temp_clos = closure;
+    closure = closure->parent;
+    cs_free_object(temp_clos);
   }
 
   return NULL;
 }
 
 CsValue cs_mutator_value_as_string(CsMutator* mut, CsValue value) {
-  CsValue str, temp1;
+  CsValue temp1;
   if (cs_value_isint(value)) {
     return cs_mutator_new_string_formatted(mut,
       "%"PRIiPTR, cs_value_toint(value));
@@ -451,16 +513,13 @@ CsValue cs_mutator_value_as_string(CsMutator* mut, CsValue value) {
       break;
 
     case CS_VALUE_INSTANCE:
-      str = cs_mutator_member_find(mut, value, "__as_string", 11);
-      if (str) {
-        if (str->type == CS_VALUE_BUILTIN)
-          return str->builtin1(mut, value);
+      temp1 = cs_mutator_member_find(mut, value, "__as_string", 11);
+      if (temp1) {
+        if (temp1->type == CS_VALUE_BUILTIN)
+          return temp1->builtin1(mut, value);
         else {
-          // __as_string is a key, but cannot be called
-          // This is a classical error
-          temp1 = cs_mutator_easy_error(mut, CS_CLASS_TYPEERROR, 
-            "__as_string is not callable");
-          cs_mutator_raise(mut, temp1);
+          cs_mutator_raise(mut, cs_mutator_easy_error(mut,
+          CS_CLASS_TYPEERROR, "__as_string is not callable"));
           return NULL;
         } 
       }

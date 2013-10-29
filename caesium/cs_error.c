@@ -26,8 +26,8 @@ CsValue cs_initclass_error(CsMutator* mut) {
   CsHash* dict = cs_hash_new();
   CsArray* bases = cs_array_new();
 
-  CsValue __as_string = cs_mutator_new_builtin1(mut, error_as_string);
-  cs_hash_insert(dict, "__as_string", 11, __as_string);
+  cs_hash_insert(dict, "__as_string", 11,
+    cs_mutator_new_builtin1(mut, error_as_string));
 
   cs_array_insert(bases, -1, CS_CLASS_OBJECT);
   CS_CLASS_ERROR = cs_mutator_new_class(mut, "Error", dict, bases);
