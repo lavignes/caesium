@@ -89,6 +89,12 @@ void cs_mutator_raise(CsMutator* mut, CsValue error);
 
 int cs_mutator_collect(CsMutator* mut);
 
+CsValue cs_mutator_easy_error(
+  CsMutator* mut,
+  CsValue klass,
+  const char* format,
+  ...);
+
 CsValue cs_mutator_value_as_string(CsMutator* mut, CsValue value);
 
 /**

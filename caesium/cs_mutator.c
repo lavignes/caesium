@@ -19,7 +19,6 @@ void cs_mutator_raise(CsMutator* mut, CsValue error) {
 static CsValue cs_mutator_new_value(CsMutator* mut) {
   CsNurseryPage* page;
   CsValue value;
-  uint8_t bits;
   int i;
   try_again: value = cs_list_pop_front(mut->freelist);
   if (value == NULL) {
@@ -44,10 +43,7 @@ static CsValue cs_mutator_new_value(CsMutator* mut) {
   }
   // mark the value as used. this is a pretty cheap operation :)
   page = (CsNurseryPage*) cs_value_getpage(value);
-  bits = page->bitmaps[cs_value_getbits(value, page)];
-  bits |= CS_NURSERY_POINTER;
-  bits &= (~CS_NURSERY_EPOCH) & (mut->epoch << CS_NURSERY_EPOCH);
-
+  page->bitmaps[cs_value_getbits(value, page)] |= CS_NURSERY_POINTER;
   return value;
 }
 
@@ -95,6 +91,28 @@ CsValue cs_mutator_new_string_formatted(
   value->string->size = len;
   value->string->length = cs_utf8_strnlen(buffer, -1);
   va_end(args);
+  return value;
+}
+
+static CsValue cs_mutator_new_string_va_list(
+  CsMutator* mut,
+  const char* format,
+  va_list args)
+{
+  int len;
+  char* buffer = NULL;
+  len = vasprintf(&buffer, format, args);
+  if (cs_unlikely(len == -1))
+    cs_exit(CS_REASON_NOMEM);
+  CsValue value = cs_mutator_new_value(mut);
+  value->type = CS_VALUE_STRING;
+  value->hash = 0;
+  value->string = cs_alloc_object(CsValueString);
+  if (cs_unlikely(value->string == NULL))
+    cs_exit(CS_REASON_NOMEM);
+  value->string->u8str = buffer;
+  value->string->size = len;
+  value->string->length = cs_utf8_strnlen(buffer, -1);
   return value;
 }
 
@@ -263,7 +281,7 @@ static CsValue loadk(CsMutator* mut, CsByteConst* konst) {
 void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
   CsByteConst* konst;
   CsPair* pair;
-  CsValue bval, cval, temp1, temp2;
+  CsValue bval, cval, temp1;
   int a, b, c;
 
   CsClosure* closure = create_stack_frame(chunk->entry);
@@ -296,13 +314,10 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
           pthread_mutex_lock(&mut->cs->globals_lock);
           pair = cs_hash_find(mut->cs->globals, konst->u8str, konst->size);
           pthread_mutex_unlock(&mut->cs->globals_lock);
-          if (cs_unlikely(pair == NULL))
-          {
+          if (cs_unlikely(pair == NULL)) {
             closure->stacks[a] = CS_NIL;
-            temp1 = cs_mutator_new_instance(mut, CS_CLASS_NAMEERROR);
-            temp2 = cs_mutator_new_string_formatted(mut,
+            temp1 = cs_mutator_easy_error(mut, CS_CLASS_NAMEERROR,
               "name '%s' is not defined", konst->u8str);
-            cs_hash_insert(temp1->dict, "what", 4, temp2);
             cs_mutator_raise(mut, temp1);
           }
           else
@@ -338,20 +353,22 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
           bval = load_rk_value(b);
           cval = load_rk_value(c);
           if (cs_value_isint(bval)) {
-            closure->stacks[a] = cs_int_add(mut, bval, cval);
+            if ((temp1 = cs_int_add(mut, bval, cval)) == NULL)
+              goto add_error;
+            closure->stacks[a] = temp1;
             break;
           }
           switch (bval->type) {
             case CS_VALUE_REAL:
-              closure->stacks[a] = cs_real_add(mut, bval, cval);
+              if ((temp1 = cs_real_add(mut, bval, cval)) == NULL)
+                goto add_error;
+              closure->stacks[a] = temp1;
               break;
 
             default:
-              closure->stacks[a] = CS_NIL;
-              temp1 = cs_mutator_new_instance(mut, CS_CLASS_TYPEERROR);
-              temp2 = cs_mutator_new_string_formatted(mut,
+              add_error: closure->stacks[a] = CS_NIL;
+              temp1 = cs_mutator_easy_error(mut, CS_CLASS_TYPEERROR,
                 "invalid operands for add");
-              cs_hash_insert(temp1->dict, "what", 4, temp2);
               cs_mutator_raise(mut, temp1);
               break;
           }
@@ -402,7 +419,7 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
 }
 
 CsValue cs_mutator_value_as_string(CsMutator* mut, CsValue value) {
-  CsValue str, temp1, temp2;
+  CsValue str, temp1;
   if (cs_value_isint(value)) {
     return cs_mutator_new_string_formatted(mut,
       "%"PRIiPTR, cs_value_toint(value));
@@ -442,10 +459,8 @@ CsValue cs_mutator_value_as_string(CsMutator* mut, CsValue value) {
         else {
           // __as_string is a key, but cannot be called
           // This is a classical error
-          temp1 = cs_mutator_new_instance(mut, CS_CLASS_TYPEERROR);
-          temp2 = cs_mutator_copy_string(mut,
-            "__as_string is not callable", 0, 27, 27);
-          cs_hash_insert(temp1->dict, "what", 4, temp2);
+          temp1 = cs_mutator_easy_error(mut, CS_CLASS_TYPEERROR, 
+            "__as_string is not callable");
           cs_mutator_raise(mut, temp1);
           return NULL;
         } 
@@ -502,14 +517,6 @@ CsValue cs_mutator_member_find(
   return NULL;
 }
 
-static void mark_value(CsMutator* mut, CsValue value) {
-
-}
-
-static void mark_hash(CsPair* pair, CsMutator* mut) {
-
-}
-
 int cs_mutator_collect(CsMutator* mut) {
   // We have to acquire the gc lock, but another thread could have already
   // acquired it and is waiting for us to decrement our sem and let their
@@ -533,43 +540,18 @@ int cs_mutator_collect(CsMutator* mut) {
   return 0;
 }
 
-/*
-void cs_nursery_mark_page(CsNurseryPage* page) {
-  int i;
-  for (i = 0; i < CS_NURSERY_PAGE_MAX; i++) {
-    if (page->bitmaps[i] & CS_NURSERY_USED) {
-      if ((page->bitmaps[i] & CS_NURSERY_MARK) == false) {
-        page->bitmaps[i] |= CS_NURSERY_MARK;
-        switch (page->values[i]->type) {
-          case CS_VALUE_INSTANCE:
-            
-          break;
-        }
-      }
-    }
-  }
-}*/
-
-// static bool mark_globals(CsPair* pair, CsMutator* mut) {
-//   CsNurseryPage* page;
-//   page = (CsNurseryPage*) cs_value_getpage(pair->value);
-//   if (!(page->bitmaps[cs_value_getbits(pair->value, page)] & CS_NURSERY_MARK)) {
-//     page->bitmaps[cs_value_getbits(pair->value, page)] |= CS_NURSERY_MARK;
-//   }
-//   mtx_unlock(&page->cs->global_lock);
-//   return false;
-// }
-
-// static void mutator_mark(CsMutator* mut) {
-
-//   // First mark the globals
-//   mtx_lock(&mut->cs->globals_lock);
-//   mtx_lock(&mut->cs->global_lock);
-
-//   cs_hash_traverse(mut->cs->globals, (bool (*)(CsPair*,void*)) mark_hash, mut);
-//   mtx_unlock(&mut->cs->globals_lock);
-// }
-
-// void cs_mutator_collect(CsMutator* mut) {
-
-// }
+CsValue cs_mutator_easy_error(
+  CsMutator* mut,
+  CsValue klass,
+  const char* format,
+  ...)
+{
+  CsValue value;
+  va_list args;
+  va_start(args, format);
+  value = cs_mutator_new_instance(mut, klass);
+  cs_hash_insert(value->dict, "what", 4,
+    cs_mutator_new_string_va_list(mut, format, args));
+  va_end(args);
+  return value;
+}
