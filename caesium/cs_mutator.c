@@ -41,9 +41,8 @@ static CsValue cs_mutator_new_value(CsMutator* mut) {
       value = cs_list_pop_front(mut->freelist);
     }
   }
-  // mark the value as used. this is a pretty cheap operation :)
   page = (CsNurseryPage*) cs_value_getpage(value);
-  page->bitmaps[cs_value_getbits(value, page)] |= CS_NURSERY_POINTER;
+  page->bitmaps[cs_value_getbits(value, page)] = mut->epoch | CS_NURSERY_USED;
   return value;
 }
 
@@ -406,7 +405,7 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
       // sync with gc
       // Essentially, we are giving the gc a chance to take control between
       // instructions.
-      mut->epoch = !mut->epoch;
+      mut->epoch = (mut->epoch + 1) & CS_NURSERY_EPOCH;
       sem_post(&mut->cs->gc_sync);
       sem_wait(&mut->cs->gc_sync);
     }
@@ -517,6 +516,10 @@ CsValue cs_mutator_member_find(
   return NULL;
 }
 
+static bool epoch_mark(CsMutator* mut, void* data) {
+  return false;
+}
+
 int cs_mutator_collect(CsMutator* mut) {
   // We have to acquire the gc lock, but another thread could have already
   // acquired it and is waiting for us to decrement our sem and let their
@@ -532,9 +535,11 @@ int cs_mutator_collect(CsMutator* mut) {
   // We've (safely) stopped the world.
   cs_debug("Yo DAWG! I heard you like garbage collection.\n");
 
+  // The epoch mark will trace all objects and mark those with
+  // epochs different than their mutators
+  cs_list_traverse(mut->cs->mutators, (bool (*)(void*,void*)) epoch_mark, NULL);
+
   // We need to scan the entire root set of each mutator.
-
-
   pthread_mutex_unlock(&mut->cs->gc_lock);
   pthread_cond_broadcast(&mut->cs->gc_done);
   return 0;

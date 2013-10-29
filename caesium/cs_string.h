@@ -1,6 +1,7 @@
 #ifndef _CS_STRING_H_
 #define _CS_STRING_H_
 
+#include "cs_mutator.h"
 #include "cs_value.h"
 
 extern CsValue CS_CLASS_STRING;

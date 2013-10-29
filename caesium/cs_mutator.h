@@ -18,7 +18,7 @@ typedef struct CsMutator {
   void* data;
 
   // Current CsValue epoch
-  bool epoch;
+  uint32_t epoch;
 
   bool error;
   CsValue error_register;

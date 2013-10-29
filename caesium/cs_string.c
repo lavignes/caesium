@@ -1,4 +1,5 @@
 #include "cs_string.h"
+#include "cs_object.h"
 
 CsValue CS_CLASS_STRING;
 
