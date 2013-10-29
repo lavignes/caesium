@@ -14,6 +14,10 @@ CsValue cs_int_div(CsMutator* mut, CsValue self, CsValue other);
 CsValue cs_int_mod(CsMutator* mut, CsValue self, CsValue other);
 CsValue cs_int_pow(CsMutator* mut, CsValue self, CsValue other);
 CsValue cs_int_neg(CsMutator* mut, CsValue self);
+CsValue cs_int_and(CsMutator* mut, CsValue self, CsValue other);
+CsValue cs_int_or(CsMutator* mut, CsValue self, CsValue other);
+CsValue cs_int_xor(CsMutator* mut, CsValue self, CsValue other);
+CsValue cs_int_not(CsMutator* mut, CsValue self);
 
 CsValue cs_initclass_int(CsMutator* mut);
 void cs_freeclass_int(CsValue klass);

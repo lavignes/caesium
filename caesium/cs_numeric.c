@@ -99,6 +99,46 @@ CsValue cs_int_neg(CsMutator* mut, CsValue self) {
     return cs_value_fromint(-cs_value_toint(self));
 }
 
+CsValue cs_int_and(CsMutator* mut, CsValue self, CsValue other) {
+  if (cs_value_isint(other))
+    return cs_value_fromint(cs_value_toint(self) & cs_value_toint(other));
+
+  switch (other->type) {
+    default:
+      cs_mutator_raise(mut, cs_mutator_easy_error(mut,
+        CS_CLASS_TYPEERROR, "invalid operands for Integer.__and"));
+      return NULL;
+  }
+}
+
+CsValue cs_int_or(CsMutator* mut, CsValue self, CsValue other) {
+  if (cs_value_isint(other))
+    return cs_value_fromint(cs_value_toint(self) | cs_value_toint(other));
+
+  switch (other->type) {
+    default:
+      cs_mutator_raise(mut, cs_mutator_easy_error(mut,
+        CS_CLASS_TYPEERROR, "invalid operands for Integer.__or"));
+      return NULL;
+  }
+}
+
+CsValue cs_int_xor(CsMutator* mut, CsValue self, CsValue other) {
+  if (cs_value_isint(other))
+    return cs_value_fromint(cs_value_toint(self) ^ cs_value_toint(other));
+
+  switch (other->type) {
+    default:
+      cs_mutator_raise(mut, cs_mutator_easy_error(mut,
+        CS_CLASS_TYPEERROR, "invalid operands for Integer.__xor"));
+      return NULL;
+  }
+}
+
+CsValue cs_int_not(CsMutator* mut, CsValue self) {
+    return cs_value_fromint(~cs_value_toint(self));
+}
+
 CsValue cs_initclass_int(CsMutator* mut) {
   CsHash* dict = cs_hash_new();
   CsArray* bases = cs_array_new();
@@ -110,6 +150,10 @@ CsValue cs_initclass_int(CsMutator* mut) {
   cs_hash_insert(dict, "__mod", 5, cs_mutator_new_builtin2(mut, cs_int_mod));
   cs_hash_insert(dict, "__pow", 5, cs_mutator_new_builtin2(mut, cs_int_pow));
   cs_hash_insert(dict, "__neg", 5, cs_mutator_new_builtin1(mut, cs_int_neg));
+  cs_hash_insert(dict, "__and", 5, cs_mutator_new_builtin2(mut, cs_int_and));
+  cs_hash_insert(dict, "__or", 4, cs_mutator_new_builtin2(mut, cs_int_or));
+  cs_hash_insert(dict, "__xor", 5, cs_mutator_new_builtin2(mut, cs_int_xor));
+  cs_hash_insert(dict, "__not", 5, cs_mutator_new_builtin1(mut, cs_int_not));
 
   cs_array_insert(bases, -1, CS_CLASS_OBJECT);
   CS_CLASS_INT = cs_mutator_new_class(mut, "Integer", dict, bases);

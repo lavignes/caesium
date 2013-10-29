@@ -7,8 +7,10 @@
 #include "cs_value.h"
 
 #include "cs_object.h"
-#include "cs_error.h"
+#include "cs_boolean.h"
 #include "cs_numeric.h"
+#include "cs_string.h"
+#include "cs_error.h"
 
 extern void setup_assembler();
 extern void shutdown_assembler();
@@ -87,6 +89,41 @@ static void create_classes(CsRuntime* cs, CsMutator* mut) {
     strlen(CS_CLASS_OBJECT->classname),
     CS_CLASS_OBJECT);
 
+  // create true class
+  cs_initclass_true(mut);
+  cs_hash_insert(cs->globals,
+    CS_CLASS_TRUE->classname,
+    strlen(CS_CLASS_TRUE->classname),
+    CS_CLASS_TRUE);
+
+  // create false class
+  cs_initclass_false(mut);
+  cs_hash_insert(cs->globals,
+    CS_CLASS_FALSE->classname,
+    strlen(CS_CLASS_FALSE->classname),
+    CS_CLASS_FALSE);
+
+  // create int class
+  cs_initclass_int(mut);
+  cs_hash_insert(cs->globals,
+    CS_CLASS_INT->classname,
+    strlen(CS_CLASS_INT->classname),
+    CS_CLASS_INT);
+
+  // create real class
+  cs_initclass_real(mut);
+  cs_hash_insert(cs->globals,
+    CS_CLASS_REAL->classname,
+    strlen(CS_CLASS_REAL->classname),
+    CS_CLASS_REAL);
+
+  // create string class
+  cs_initclass_string(mut);
+  cs_hash_insert(cs->globals,
+    CS_CLASS_STRING->classname,
+    strlen(CS_CLASS_STRING->classname),
+    CS_CLASS_STRING);
+
   // create error class
   cs_initclass_error(mut);
   cs_hash_insert(cs->globals,
@@ -111,6 +148,11 @@ static void create_classes(CsRuntime* cs, CsMutator* mut) {
 
 static void cleanup_classes() {
   cs_freeclass_object(CS_CLASS_OBJECT);
+  cs_freeclass_object(CS_CLASS_TRUE);
+  cs_freeclass_object(CS_CLASS_FALSE);
+  cs_freeclass_object(CS_CLASS_INT);
+  cs_freeclass_object(CS_CLASS_REAL);
+  cs_freeclass_object(CS_CLASS_STRING);
   cs_freeclass_error(CS_CLASS_ERROR);
   cs_freeclass_error(CS_CLASS_NAMEERROR);
   cs_freeclass_error(CS_CLASS_TYPEERROR);

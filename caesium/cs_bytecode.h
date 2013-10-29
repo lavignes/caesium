@@ -63,7 +63,8 @@ typedef uint32_t CsByteCode;
 #define cs_bytecode_get_a(bytecode)   ((bytecode & CS_BYTECODE_A_MASK) >> 6)
 #define cs_bytecode_get_b(bytecode)   ((bytecode & CS_BYTECODE_B_MASK) >> 23)
 #define cs_bytecode_get_c(bytecode)   ((bytecode & CS_BYTECODE_C_MASK) >> 14)
-#define cs_bytecode_get_imm(bytecode) ((bytecode & CS_BYTECODE_IMM_MASK) >> 14)
+#define cs_bytecode_get_imm(bytecode) \
+  (((int32_t) (bytecode & CS_BYTECODE_IMM_MASK)) >> 14)
 
 #define cs_bytecode_set_opcode(bytecode, opcode) \
   ((bytecode & ~CS_BYTECODE_OPCODE_MASK) | opcode)
