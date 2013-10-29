@@ -10,7 +10,7 @@ LDFLAGS = -L$(LIB_DIR)/
 CS_DIR = caesium
 CS_SRCS = $(wildcard caesium/*.c)
 CS_OBJS = $(CS_SRCS:.c=.o)
-CS_LIBS = -lxxhash -lpthread
+CS_LIBS = -lxxhash -lpthread -lm
 
 TINYC_DIR = $(LIB_DIR)/tinycthread
 TINYC_SRCS = $(wildcard $(TINYC_DIR)/*.c)

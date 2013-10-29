@@ -16,7 +16,7 @@
     },
     {  
       "name": "support.function",
-      "match": "(move|loadk|loadg|storg|loadi|stori|lodup|strup|puts|new|add|sub|sub|div|mod|pow|neg|and|or|xor|not|shl|shr|jmp|if|lt|le|eq|clos|cpyup|movup|call|ret|raise|catch|spwn|send|recv)\\b"
+      "match": "(move|loadk|loadg|storg|loadi|stori|lodup|strup|puts|new|add|sub|mul|div|mod|pow|neg|and|or|xor|not|shl|shr|jmp|if|lt|le|eq|clos|cpyup|movup|call|ret|raise|catch|spwn|send|recv)\\b"
     },
     {  
       "name": "keyword.control",

@@ -16,7 +16,7 @@ typedef enum CsOpcode {
   CS_OPCODE_NEW,     // new A B     -> R[A] = new R[B]
   CS_OPCODE_ADD,     // add A B C   -> R[A] = RK[B] + RK[C]
   CS_OPCODE_SUB,     // sub A B C   -> R[A] = RK[B] - RK[C]
-  CS_OPCODE_MUL,     // sub A B C   -> R[A] = RK[B] * RK[C]
+  CS_OPCODE_MUL,     // mul A B C   -> R[A] = RK[B] * RK[C]
   CS_OPCODE_DIV,     // div A B C   -> R[A] = RK[B] / RK[C]
   CS_OPCODE_MOD,     // mod A B C   -> R[A] = RK[B] % RK[C]
   CS_OPCODE_POW,     // pow A B C   -> R[A] = RK[B] ** RK[C]
@@ -105,7 +105,7 @@ typedef struct CsByteConst {
       size_t length;
       const char* u8str;
     };
-    uint32_t integer;
+    intptr_t integer;
     double real;
   }; // <3
 } CsByteConst;

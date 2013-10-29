@@ -353,21 +353,21 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
           cval = load_rk_value(c);
           if (cs_value_isint(bval)) {
             if ((temp1 = cs_int_add(mut, bval, cval)) == NULL)
-              goto add_error;
-            closure->stacks[a] = temp1;
+              closure->stacks[a] = CS_NIL;
+            else closure->stacks[a] = temp1;
             break;
           }
           switch (bval->type) {
             case CS_VALUE_REAL:
               if ((temp1 = cs_real_add(mut, bval, cval)) == NULL)
-                goto add_error;
-              closure->stacks[a] = temp1;
+                closure->stacks[a] = CS_NIL;
+              else closure->stacks[a] = temp1;
               break;
 
             case CS_VALUE_STRING:
               if ((temp1 = cs_string_add(mut, bval, cval)) == NULL)
-                goto add_error;
-              closure->stacks[a] = temp1;
+                closure->stacks[a] = CS_NIL;
+              else closure->stacks[a] = temp1;
               break;
 
             case CS_VALUE_INSTANCE:
@@ -378,16 +378,17 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
                 else {
                   closure->stacks[a] = CS_NIL;
                   cs_mutator_raise(mut, cs_mutator_easy_error(mut,
-                    CS_CLASS_TYPEERROR, "__add is not callable"));
+                    CS_CLASS_TYPEERROR, "%s.__add is not callable",
+                    bval->klass->classname));
                 } 
               }
-              goto add_error;
+              else goto add_error;
               break;
 
             default:
               add_error: closure->stacks[a] = CS_NIL;
               cs_mutator_raise(mut, cs_mutator_easy_error(mut,
-                CS_CLASS_TYPEERROR, "invalid operands for add"));
+                CS_CLASS_TYPEERROR, "invalid operands for Object.__add"));
               break;
           }
           break;
@@ -400,15 +401,15 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
           cval = load_rk_value(c);
           if (cs_value_isint(bval)) {
             if ((temp1 = cs_int_sub(mut, bval, cval)) == NULL)
-              goto add_error;
-            closure->stacks[a] = temp1;
+              closure->stacks[a] = CS_NIL;
+            else closure->stacks[a] = temp1;
             break;
           }
           switch (bval->type) {
             case CS_VALUE_REAL:
               if ((temp1 = cs_real_sub(mut, bval, cval)) == NULL)
-                goto sub_error;
-              closure->stacks[a] = temp1;
+                closure->stacks[a] = CS_NIL;
+              else closure->stacks[a] = temp1;
               break;
 
             case CS_VALUE_INSTANCE:
@@ -419,16 +420,225 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
                 else {
                   closure->stacks[a] = CS_NIL;
                   cs_mutator_raise(mut, cs_mutator_easy_error(mut,
-                    CS_CLASS_TYPEERROR, "__sub is not callable"));
+                    CS_CLASS_TYPEERROR, "%s.__sub is not callable",
+                    bval->klass->classname));
                 } 
               }
-              goto sub_error;
+              else goto sub_error;
               break;
 
             default:
               sub_error: closure->stacks[a] = CS_NIL;
               cs_mutator_raise(mut, cs_mutator_easy_error(mut,
-                CS_CLASS_TYPEERROR, "invalid operands for sub"));
+                CS_CLASS_TYPEERROR, "invalid operands for Object.__sub"));
+              break;
+          }
+          break;
+
+        case CS_OPCODE_MUL:
+          a = cs_bytecode_get_a(code);
+          b = cs_bytecode_get_b(code);
+          c = cs_bytecode_get_c(code);
+          bval = load_rk_value(b);
+          cval = load_rk_value(c);
+          if (cs_value_isint(bval)) {
+            if ((temp1 = cs_int_mul(mut, bval, cval)) == NULL)
+              closure->stacks[a] = CS_NIL;
+            else closure->stacks[a] = temp1;
+            break;
+          }
+          switch (bval->type) {
+            case CS_VALUE_REAL:
+              if ((temp1 = cs_real_mul(mut, bval, cval)) == NULL)
+                closure->stacks[a] = CS_NIL;
+              else closure->stacks[a] = temp1;
+              break;
+
+            case CS_VALUE_STRING:
+              if ((temp1 = cs_string_mul(mut, bval, cval)) == NULL)
+                closure->stacks[a] = CS_NIL;
+              else closure->stacks[a] = temp1;
+              break;
+
+            case CS_VALUE_INSTANCE:
+              temp1 = cs_mutator_member_find(mut, bval, "__mul", 5);
+              if (temp1) {
+                if (temp1->type == CS_VALUE_BUILTIN)
+                  closure->stacks[a] = temp1->builtin2(mut, bval, cval);
+                else {
+                  closure->stacks[a] = CS_NIL;
+                  cs_mutator_raise(mut, cs_mutator_easy_error(mut,
+                    CS_CLASS_TYPEERROR, "%s.__mul is not callable",
+                    bval->klass->classname));
+                } 
+              }
+              else goto mul_error;
+              break;
+
+            default:
+              mul_error: closure->stacks[a] = CS_NIL;
+              cs_mutator_raise(mut, cs_mutator_easy_error(mut,
+                CS_CLASS_TYPEERROR, "invalid operands for Object.__mul"));
+              break;
+          }
+          break;
+
+        case CS_OPCODE_DIV:
+          a = cs_bytecode_get_a(code);
+          b = cs_bytecode_get_b(code);
+          c = cs_bytecode_get_c(code);
+          bval = load_rk_value(b);
+          cval = load_rk_value(c);
+          if (cs_value_isint(bval)) {
+            if ((temp1 = cs_int_div(mut, bval, cval)) == NULL)
+              closure->stacks[a] = CS_NIL;
+            else closure->stacks[a] = temp1;
+            break;
+          }
+          switch (bval->type) {
+            case CS_VALUE_REAL:
+              if ((temp1 = cs_real_div(mut, bval, cval)) == NULL)
+                closure->stacks[a] = CS_NIL;
+              else closure->stacks[a] = temp1;
+              break;
+
+            case CS_VALUE_INSTANCE:
+              temp1 = cs_mutator_member_find(mut, bval, "__div", 5);
+              if (temp1) {
+                if (temp1->type == CS_VALUE_BUILTIN)
+                  closure->stacks[a] = temp1->builtin2(mut, bval, cval);
+                else {
+                  closure->stacks[a] = CS_NIL;
+                  cs_mutator_raise(mut, cs_mutator_easy_error(mut,
+                    CS_CLASS_TYPEERROR, "%s.__div is not callable",
+                    bval->klass->classname));
+                } 
+              }
+              else goto div_error;
+              break;
+
+            default:
+              div_error: closure->stacks[a] = CS_NIL;
+              cs_mutator_raise(mut, cs_mutator_easy_error(mut,
+                CS_CLASS_TYPEERROR, "invalid operands for Object.__div"));
+              break;
+          }
+          break;
+
+        case CS_OPCODE_MOD:
+          a = cs_bytecode_get_a(code);
+          b = cs_bytecode_get_b(code);
+          c = cs_bytecode_get_c(code);
+          bval = load_rk_value(b);
+          cval = load_rk_value(c);
+          if (cs_value_isint(bval)) {
+            if ((temp1 = cs_int_mod(mut, bval, cval)) == NULL)
+              closure->stacks[a] = CS_NIL;
+            else closure->stacks[a] = temp1;
+            break;
+          }
+          switch (bval->type) {
+            case CS_VALUE_INSTANCE:
+              temp1 = cs_mutator_member_find(mut, bval, "__mod", 5);
+              if (temp1) {
+                if (temp1->type == CS_VALUE_BUILTIN)
+                  closure->stacks[a] = temp1->builtin2(mut, bval, cval);
+                else {
+                  closure->stacks[a] = CS_NIL;
+                  cs_mutator_raise(mut, cs_mutator_easy_error(mut,
+                    CS_CLASS_TYPEERROR, "%s.__mod is not callable",
+                    bval->klass->classname));
+                } 
+              }
+              else goto mod_error;
+              break;
+
+            default:
+              mod_error: closure->stacks[a] = CS_NIL;
+              cs_mutator_raise(mut, cs_mutator_easy_error(mut,
+                CS_CLASS_TYPEERROR, "invalid operands for Object.__mod"));
+              break;
+          }
+          break;
+
+        case CS_OPCODE_POW:
+          a = cs_bytecode_get_a(code);
+          b = cs_bytecode_get_b(code);
+          c = cs_bytecode_get_c(code);
+          bval = load_rk_value(b);
+          cval = load_rk_value(c);
+          if (cs_value_isint(bval)) {
+            if ((temp1 = cs_int_pow(mut, bval, cval)) == NULL)
+              closure->stacks[a] = CS_NIL;
+            else closure->stacks[a] = temp1;
+            break;
+          }
+          switch (bval->type) {
+            case CS_VALUE_REAL:
+              if ((temp1 = cs_real_pow(mut, bval, cval)) == NULL)
+                closure->stacks[a] = CS_NIL;
+              else closure->stacks[a] = temp1;
+              break;
+
+            case CS_VALUE_INSTANCE:
+              temp1 = cs_mutator_member_find(mut, bval, "__pow", 5);
+              if (temp1) {
+                if (temp1->type == CS_VALUE_BUILTIN)
+                  closure->stacks[a] = temp1->builtin2(mut, bval, cval);
+                else {
+                  closure->stacks[a] = CS_NIL;
+                  cs_mutator_raise(mut, cs_mutator_easy_error(mut,
+                    CS_CLASS_TYPEERROR, "%s.__pow is not callable",
+                    bval->klass->classname));
+                } 
+              }
+              else goto pow_error;
+              break;
+
+            default:
+              pow_error: closure->stacks[a] = CS_NIL;
+              cs_mutator_raise(mut, cs_mutator_easy_error(mut,
+                CS_CLASS_TYPEERROR, "invalid operands for Object.__pow"));
+              break;
+          }
+          break;
+
+        case CS_OPCODE_NEG:
+          a = cs_bytecode_get_a(code);
+          b = cs_bytecode_get_b(code);
+          bval = load_rk_value(b);
+          if (cs_value_isint(bval)) {
+            if ((temp1 = cs_int_neg(mut, bval)) == NULL)
+              closure->stacks[a] = CS_NIL;
+            else closure->stacks[a] = temp1;
+            break;
+          }
+          switch (bval->type) {
+            case CS_VALUE_REAL:
+              if ((temp1 = cs_real_neg(mut, bval)) == NULL)
+                closure->stacks[a] = CS_NIL;
+              else closure->stacks[a] = temp1;
+              break;
+
+            case CS_VALUE_INSTANCE:
+              temp1 = cs_mutator_member_find(mut, bval, "__neg", 5);
+              if (temp1) {
+                if (temp1->type == CS_VALUE_BUILTIN)
+                  closure->stacks[a] = temp1->builtin1(mut, bval);
+                else {
+                  closure->stacks[a] = CS_NIL;
+                  cs_mutator_raise(mut, cs_mutator_easy_error(mut,
+                    CS_CLASS_TYPEERROR, "%s.__neg is not callable",
+                    bval->klass->classname));
+                }
+              }
+              else goto neg_error;
+              break;
+
+            default:
+              neg_error: closure->stacks[a] = CS_NIL;
+              cs_mutator_raise(mut, cs_mutator_easy_error(mut,
+                CS_CLASS_TYPEERROR, "invalid operands for Object.__neg"));
               break;
           }
           break;
@@ -519,7 +729,8 @@ CsValue cs_mutator_value_as_string(CsMutator* mut, CsValue value) {
           return temp1->builtin1(mut, value);
         else {
           cs_mutator_raise(mut, cs_mutator_easy_error(mut,
-          CS_CLASS_TYPEERROR, "__as_string is not callable"));
+            CS_CLASS_TYPEERROR, "%s.__as_string is not callable",
+            value->klass->classname));
           return NULL;
         } 
       }
