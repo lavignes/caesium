@@ -31,19 +31,18 @@ void cs_array_free(CsArray* arr) {
 }
 
 bool cs_array_find(CsArray* arr, long pos, void** data) {
-  long i = (pos < 0)? ((long) arr->length) + pos + 1: pos;
+  long i = (pos < 0)? ((long) arr->length) + pos: pos;
   cs_return_if(i >= (long) arr->length || i < 0, false);
   *data = arr->buckets[i];
   return true;
 }
 
 bool cs_array_set(CsArray* arr, long pos, void* data) {
-  long i = (pos < 0)? ((long) arr->length) + pos + 1: pos;
+  long i = (pos < 0)? ((long) arr->length) + pos: pos;
   cs_return_if(i >= (long) arr->length || i < 0, false);
   arr->buckets[i] = data;
   return true;
 }
-
 
 bool cs_array_insert(CsArray* arr, long pos, void* data) {
   long i = (pos < 0)? ((long) arr->length) + pos + 1 : pos;

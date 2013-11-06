@@ -7,7 +7,9 @@ CsValue CS_CLASS_ARRAY;
 static int __new(CsMutator* mut,
   int argc, CsValue* args, int retc, CsValue* rets) {
   CsArray* array = cs_array_new();
-  cs_array_insert(array, -1, cs_value_fromint(42));
+  cs_array_insert(array, -1, cs_value_fromint(1));
+  cs_array_insert(array, -1, cs_value_fromint(2));
+  cs_array_insert(array, -1, cs_value_fromint(3));
   RET = cs_mutator_new_array(mut, array);
   return 1;
 }

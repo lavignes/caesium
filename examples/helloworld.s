@@ -1,6 +1,6 @@
 .entry 0 0 2
   .const 'Array'
-  .const 0
+  .const -2
   .const 'test'
   loadg 0 0
   puts 0

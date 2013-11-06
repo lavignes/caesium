@@ -177,6 +177,8 @@ static void cleanup_classes() {
 
 void cs_runtime_doassembly(CsRuntime* cs, const char* u8str, size_t size) {
   CsMutator* mut0 = cs_mutator_new(cs);
+  // Increase the gc_sync semaphore
+  sem_post(&cs->gc_sync);
   cs_list_push_back(cs->mutators, mut0);
 
   create_classes(cs, mut0);
@@ -185,8 +187,6 @@ void cs_runtime_doassembly(CsRuntime* cs, const char* u8str, size_t size) {
   CsByteChunk* chunk = cs_assembler_assemble(assembler, u8str, size);
   cs_assembler_free(assembler);
 
-  // Increase the gc_sync semaphore
-  sem_post(&cs->gc_sync);
   cs_mutator_start(mut0, (void* (*)(CsMutator*, void*)) cs_mutator_exec, chunk);
 
   if (pthread_join(mut0->thread, NULL))
