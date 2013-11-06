@@ -6,7 +6,8 @@
 
 extern CsValue CS_CLASS_ARRAY;
 
-CsValue cs_arrayclass_as_string(CsMutator* mut, CsValue self);
+// int cs_arrayclass_as_string(CsMutator* mut,
+//   int argc, CsValue* args, int retc, CsValue* rets);
 
 CsValue cs_initclass_array(CsMutator* mut);
 void cs_freeclass_array(CsValue klass);

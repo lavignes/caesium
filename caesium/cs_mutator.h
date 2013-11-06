@@ -61,10 +61,7 @@ CsValue cs_mutator_new_class(
   CsHash* dict,
   CsArray* bases);
 
-CsValue cs_mutator_new_builtin0(CsMutator* mut, CsBuiltin0 builtin0);
-CsValue cs_mutator_new_builtin1(CsMutator* mut, CsBuiltin1 builtin1);
-CsValue cs_mutator_new_builtin2(CsMutator* mut, CsBuiltin2 builtin2);
-CsValue cs_mutator_new_builtin3(CsMutator* mut, CsBuiltin3 builtin3);
+CsValue cs_mutator_new_builtin(CsMutator* mut, CsBuiltin builtin);
 
 CsValue cs_mutator_new_instance(CsMutator* mut, CsValue klass);
 

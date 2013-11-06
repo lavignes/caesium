@@ -7,15 +7,18 @@
 CsValue CS_CLASS_INT;
 CsValue CS_CLASS_REAL;
 
-CsValue cs_int_add(CsMutator* mut, CsValue self, CsValue other) {
-  if (cs_value_isint(other))
-    return cs_value_fromint(cs_value_toint(self) + cs_value_toint(other));
-
-  switch (other->type) {
+int cs_int_add(CsMutator* mut,
+  int argc, CsValue* args, int retc, CsValue* rets) {
+  if (cs_value_isint(OTHER)) {
+    RET = cs_value_fromint(cs_value_toint(SELF) + cs_value_toint(OTHER));
+    return 1;
+  }
+  switch (OTHER->type) {
     case CS_VALUE_REAL:
-      return cs_mutator_new_real(mut,
-        ((double) cs_value_toint(self)) + cs_value_toreal(other));
-
+      RETS = cs_mutator_new_real(mut,
+        ((double) cs_value_toint(SELF)) + cs_value_toreal(OTHER));
+      return 1;
+      
     default:
       cs_mutator_raise(mut, cs_mutator_easy_error(mut,
         CS_CLASS_TYPEERROR, "invalid operands for Integer.__add"));

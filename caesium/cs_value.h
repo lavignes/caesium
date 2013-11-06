@@ -17,6 +17,7 @@ typedef enum CsValueType {
   CS_VALUE_CLASS,
   CS_VALUE_INSTANCE,
   CS_VALUE_BUILTIN,
+  CS_VALUE_BUILTIN_VA,
 } CsValueType;
 
 typedef struct CsValueString {
@@ -28,10 +29,21 @@ typedef struct CsValueString {
 struct CsMutator;
 typedef struct CsValueStruct* CsValue;
 
-typedef CsValue (*CsBuiltin0)(struct CsMutator*);
-typedef CsValue (*CsBuiltin1)(struct CsMutator*,CsValue);
-typedef CsValue (*CsBuiltin2)(struct CsMutator*,CsValue,CsValue);
-typedef CsValue (*CsBuiltin3)(struct CsMutator*,CsValue,CsValue,CsValue);
+
+/**
+ *  Builtin function:
+ *  argc => argument count
+ *  args => argument list
+ *  retc => expected returns count
+ *  rets => returns list
+ *  returns number of filled rets or 0 if exception occurrs
+ */
+typedef int (*CsBuiltin)(struct CsMutator*,
+  int argc, CsValue* args, int retc, CsValue* rets);
+
+#define SELF args[0]
+#define OTHER args[1]
+#define RET rets[0]
 
 typedef struct CsValueStruct {
   union {
@@ -46,12 +58,7 @@ typedef struct CsValueStruct {
         CsValue klass;
       };
       union {
-        union {
-          CsBuiltin0 builtin0;
-          CsBuiltin1 builtin1;
-          CsBuiltin2 builtin2;
-          CsBuiltin3 builtin3;
-        };
+        CsBuiltin builtin;
         CsHash* dict;
         CsArray* array;
         double real;
