@@ -12,17 +12,15 @@ static int __new(CsMutator* mut,
 
 int cs_string_add(CsMutator* mut,
   int argc, CsValue* args, int retc, CsValue* rets) {
-  switch (OTHER->type) {
-    case CS_VALUE_STRING:
-      RET = cs_mutator_new_string_formatted(mut, "%s%s", 
-        cs_value_tostring(SELF), cs_value_tostring(OTHER));
-      return 1;
-
-    default:
-      cs_mutator_raise(mut, cs_mutator_easy_error(mut,
-        CS_CLASS_TYPEERROR, "invalid operands for String.__add"));
-      return 0;
+  if (!cs_value_isint(OTHER) && OTHER->type == CS_VALUE_STRING) {
+    RET = cs_mutator_new_string_formatted(mut, "%s%s", 
+      cs_value_tostring(SELF), cs_value_tostring(OTHER));
+    return 1;
   }
+  
+  cs_mutator_raise(mut, cs_mutator_easy_error(mut,
+    CS_CLASS_TYPEERROR, "invalid operands for String.__add"));
+  return 0;
 }
 
 int cs_string_mul(CsMutator* mut,

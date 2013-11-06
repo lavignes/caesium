@@ -29,17 +29,18 @@ typedef struct CsMutator {
 } CsMutator;
 
 typedef struct CsClosure {
-
-  struct CsClosure* parent;
   CsByteFunction* cur_func;
-  size_t pc;
-  uintptr_t* codes;
-  size_t ncodes;
-  CsValue* params;
   CsValue* upvals;
-  CsValue* stacks;
-
 } CsClosure;
+
+typedef struct CsInvocation {
+  CsClosure* closure;
+  size_t pc;
+  size_t ncodes;
+  uintptr_t* codes;
+  struct CsInvocation* parent;
+  CsValue* stacks;
+} CsInvocation;
 
 CsValue cs_mutator_copy_string(
   CsMutator* mut,

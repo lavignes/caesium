@@ -162,6 +162,13 @@ CsValue cs_mutator_new_instance(CsMutator* mut, CsValue klass) {
   return value;
 }
 
+static CsValue cs_mutator_new_closure(CsMutator* mut, CsClosure* closure) {
+  CsValue value = cs_mutator_new_value(mut);
+  value->type = CS_VALUE_CLOSURE;
+  value->closure = closure;
+  return value;
+}
+
 CsMutator* cs_mutator_new(CsRuntime* cs) {
   int i;
   CsMutator* mut = cs_alloc_object(CsMutator);
@@ -216,27 +223,29 @@ void cs_mutator_start(
     cs_exit(CS_REASON_THRDFATAL);
 }
 
-static CsClosure* create_stack_frame(CsByteFunction* func) {
+static CsClosure* create_closure(CsByteFunction* func) {
   CsClosure* closure = malloc(sizeof(CsClosure) + sizeof(CsValue)
-    * (func->nparams + func->nupvals + func->nstacks));
+    * func->nupvals);
   if (cs_unlikely(closure == NULL))
     cs_exit(CS_REASON_NOMEM);
 
-  closure->parent = NULL;
-
-  // Cast closure to void* to prevent heap corruption
-  closure->params = ((void*) closure) + sizeof(CsClosure);
-  closure->upvals = &closure->params[func->nparams];
-  closure->stacks = &closure->upvals[func->nupvals];
-
   closure->cur_func = func;
-  closure->pc = 0;
-
-  closure->ncodes = func->codes->length;
-  closure->codes = (uintptr_t*) func->codes->buckets;
-
+  // Cast closure to void* to prevent heap corruption
+  closure->upvals = ((void*) closure) + sizeof(CsClosure);
   return closure;
 }
+
+static CsInvocation* invoke(CsMutator* mut, CsClosure* closure) {
+  CsInvocation* env = malloc(sizeof(CsInvocation) + sizeof(CsValue) *
+    (closure->cur_func->nstacks + closure->cur_func->nparams));
+  env->closure = closure;
+  env->pc = 0;
+  env->ncodes = closure->cur_func->codes->length;
+  env->codes = (uintptr_t*) closure->cur_func->codes->buckets;
+  env->parent = NULL;
+  env->stacks = ((void*) env) + sizeof(CsInvocation);
+  return env;
+} 
 
 static CsValue loadk(CsMutator* mut, CsByteConst* konst) {
   switch (konst->type) {
@@ -265,20 +274,25 @@ static CsValue loadk(CsMutator* mut, CsByteConst* konst) {
 }
 
 #define load_rk_value(r) (r > 255)? \
-  loadk(mut, closure->cur_func->consts->buckets[r - 256]) : closure->stacks[r]
+  loadk(mut, env->closure->cur_func->consts->buckets[r - 256]) : env->stacks[r]
 
 void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
   CsByteConst* konst;
+  CsInvocation* temp_env;
   CsPair* pair;
   CsValue val[3];
   CsValue temp1, temp2;
-  int a, b, c, simm;
+  int a, b, c, simm, imm;
 
-  CsClosure* closure = create_stack_frame(chunk->entry);
+  CsClosure* closure = create_closure(chunk->entry);
+  // Have the garbage collector handle it
+  cs_mutator_new_closure(mut, closure);
+  CsInvocation* env = invoke(mut, closure);
 
-  while (cs_likely(closure)) {
-    for (closure->pc = 0; closure->pc < closure->ncodes; closure->pc++) {
-      CsByteCode code = closure->codes[closure->pc];
+  while (cs_likely(env)) {
+    context_swtich_env:
+    for (; env->pc < env->ncodes; env->pc++) {
+      CsByteCode code = env->codes[env->pc];
       switch (cs_bytecode_get_opcode(code)) {
         case CS_OPCODE_MOVE:
           a = cs_bytecode_get_a(code);
@@ -287,42 +301,42 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
             b = b - 256;
             goto move_as_loadk;
           }
-          closure->stacks[a] = closure->stacks[b];
+          env->stacks[a] = env->stacks[b];
           break;
 
         case CS_OPCODE_LOADK:
           a = cs_bytecode_get_a(code);
           b = cs_bytecode_get_b(code);
-          move_as_loadk: closure->stacks[a] =
-            loadk(mut, closure->cur_func->consts->buckets[b]);
+          move_as_loadk: env->stacks[a] =
+            loadk(mut, env->closure->cur_func->consts->buckets[b]);
           break;
           
         case CS_OPCODE_LOADG:
           a = cs_bytecode_get_a(code);
           b = cs_bytecode_get_b(code);
-          konst = closure->cur_func->consts->buckets[b];
+          konst = env->closure->cur_func->consts->buckets[b];
           pthread_mutex_lock(&mut->cs->globals_lock);
           pair = cs_hash_find(mut->cs->globals, konst->u8str, konst->size);
           pthread_mutex_unlock(&mut->cs->globals_lock);
           if (cs_unlikely(pair == NULL)) {
-            closure->stacks[a] = CS_NIL;
+            env->stacks[a] = CS_NIL;
             cs_mutator_raise(mut, cs_mutator_easy_error(mut,
               CS_CLASS_NAMEERROR, "name '%s' is not defined", konst->u8str));
           }
           else
-            closure->stacks[a] = pair->value;
+            env->stacks[a] = pair->value;
           break;
 
         case CS_OPCODE_STORG:
           a = cs_bytecode_get_a(code);
           b = cs_bytecode_get_b(code);
-          konst = closure->cur_func->consts->buckets[b];
+          konst = env->closure->cur_func->consts->buckets[b];
           pthread_mutex_unlock(&mut->cs->globals_lock);
           cs_hash_insert(
             mut->cs->globals,
             konst->u8str,
             konst->size,
-            closure->stacks[a]);
+            env->stacks[a]);
           pthread_mutex_unlock(&mut->cs->globals_lock);
           break;
 
@@ -330,22 +344,22 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
           a = cs_bytecode_get_a(code);
           b = cs_bytecode_get_b(code);
           c = cs_bytecode_get_c(code);
-          val[1] = closure->stacks[b];
+          val[1] = env->stacks[b];
           val[2] = load_rk_value(c);
           if (cs_value_isint(val[1]))
             goto get_error;
           switch (val[1]->type) {
             case CS_VALUE_ARRAY:
-              cs_arrayclass_get(mut, 2, &val[1], 1, &closure->stacks[a]);
+              cs_arrayclass_get(mut, 2, &val[1], 1, &env->stacks[a]);
               break;
 
             case CS_VALUE_INSTANCE:
               temp1 = cs_mutator_member_find(mut, val[1], "__get", 5);
               if (temp1) {
                 if (temp1->type == CS_VALUE_BUILTIN)
-                  temp1->builtin(mut, 2, &val[1], 1, &closure->stacks[a]);
+                  temp1->builtin(mut, 2, &val[1], 1, &env->stacks[a]);
                 else {
-                  closure->stacks[a] = CS_NIL;
+                  env->stacks[a] = CS_NIL;
                   cs_mutator_raise(mut, cs_mutator_easy_error(mut,
                     CS_CLASS_TYPEERROR, "%s.__get is not callable",
                     val[1]->klass->classname));
@@ -355,7 +369,7 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
               break;
 
             default:
-              get_error: closure->stacks[a] = CS_NIL;
+              get_error: env->stacks[a] = CS_NIL;
               cs_mutator_raise(mut, cs_mutator_easy_error(mut,
                 CS_CLASS_TYPEERROR, "invalid operands for Object.__get"));
               break;
@@ -366,9 +380,9 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
           a = cs_bytecode_get_a(code);
           b = cs_bytecode_get_b(code);
           c = cs_bytecode_get_c(code);
-          val[0] = closure->stacks[b];
+          val[0] = env->stacks[b];
           val[1] = load_rk_value(c);
-          val[2] = closure->stacks[a];
+          val[2] = env->stacks[a];
           if (cs_value_isint(val[0]))
             goto set_error;
           switch (val[0]->type) {
@@ -391,7 +405,7 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
               break;
 
             default:
-              set_error: closure->stacks[a] = CS_NIL;
+              set_error: env->stacks[a] = CS_NIL;
               cs_mutator_raise(mut, cs_mutator_easy_error(mut,
                 CS_CLASS_TYPEERROR, "invalid operands for Object.__set"));
               break;
@@ -401,7 +415,7 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
         case CS_OPCODE_PUTS:
           a = cs_bytecode_get_a(code);
           // value_as_string can return NULL if an exception occurs
-          temp1 = cs_mutator_value_as_string(mut, closure->stacks[a]);
+          temp1 = cs_mutator_value_as_string(mut, env->stacks[a]);
           if (cs_likely(temp1 != NULL))
             printf("%s\n", cs_value_tostring(temp1));
           break;
@@ -409,22 +423,22 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
         case CS_OPCODE_NEW:
           a = cs_bytecode_get_a(code);
           b = cs_bytecode_get_b(code);
-          if (!cs_value_isint(closure->stacks[b])
-            && closure->stacks[b]->type == CS_VALUE_CLASS) {
-            temp1 = cs_mutator_member_find(mut, closure->stacks[b], "__new", 5);
+          if (!cs_value_isint(env->stacks[b])
+            && env->stacks[b]->type == CS_VALUE_CLASS) {
+            temp1 = cs_mutator_member_find(mut, env->stacks[b], "__new", 5);
             if (temp1->type == CS_VALUE_BUILTIN)
               temp1->builtin(mut,
-                1, &closure->stacks[b],
-                1, &closure->stacks[a]);
+                1, &env->stacks[b],
+                1, &env->stacks[a]);
             else {
-              closure->stacks[a] = CS_NIL;
+              env->stacks[a] = CS_NIL;
               cs_mutator_raise(mut, cs_mutator_easy_error(mut,
                 CS_CLASS_TYPEERROR, "%s.__new is not callable",
-                closure->stacks[b]->klass->classname));
+                env->stacks[b]->klass->classname));
             }
           }
           else {
-            closure->stacks[a] = CS_NIL;
+            env->stacks[a] = CS_NIL;
             cs_mutator_raise(mut, cs_mutator_easy_error(mut,
               CS_CLASS_TYPEERROR, "Cannot instantiate non-class"));
           }
@@ -438,27 +452,27 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
           val[1] = load_rk_value(b);
           val[2] = load_rk_value(c);
           if (cs_value_isint(val[1])) {
-            cs_int_add(mut, 2, &val[1], 1, &closure->stacks[a]);
+            cs_int_add(mut, 2, &val[1], 1, &env->stacks[a]);
             break;
           }
           switch (val[1]->type) {
             case CS_VALUE_REAL:
-              cs_real_add(mut, 2, &val[1], 1, &closure->stacks[a]);
+              cs_real_add(mut, 2, &val[1], 1, &env->stacks[a]);
               break;
             case CS_VALUE_STRING:
-              cs_string_add(mut, 2, &val[1], 1, &closure->stacks[a]);
+              cs_string_add(mut, 2, &val[1], 1, &env->stacks[a]);
               break;
             case CS_VALUE_ARRAY:
-              cs_arrayclass_add(mut, 2, &val[1], 1, &closure->stacks[a]);
+              cs_arrayclass_add(mut, 2, &val[1], 1, &env->stacks[a]);
               break;
 
             case CS_VALUE_INSTANCE:
               temp1 = cs_mutator_member_find(mut, val[1], "__add", 5);
               if (temp1) {
                 if (temp1->type == CS_VALUE_BUILTIN)
-                  temp1->builtin(mut, 2, &val[1], 1, &closure->stacks[a]);
+                  temp1->builtin(mut, 2, &val[1], 1, &env->stacks[a]);
                 else {
-                  closure->stacks[a] = CS_NIL;
+                  env->stacks[a] = CS_NIL;
                   cs_mutator_raise(mut, cs_mutator_easy_error(mut,
                     CS_CLASS_TYPEERROR, "%s.__add is not callable",
                     val[1]->klass->classname));
@@ -468,7 +482,7 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
               break;
 
             default:
-              add_error: closure->stacks[a] = CS_NIL;
+              add_error: env->stacks[a] = CS_NIL;
               cs_mutator_raise(mut, cs_mutator_easy_error(mut,
                 CS_CLASS_TYPEERROR, "invalid operands for Object.__add"));
               break;
@@ -483,21 +497,21 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
           val[1] = load_rk_value(b);
           val[2] = load_rk_value(c);
           if (cs_value_isint(val[1])) {
-            cs_int_sub(mut, 2, &val[1], 1, &closure->stacks[a]);
+            cs_int_sub(mut, 2, &val[1], 1, &env->stacks[a]);
             break;
           }
           switch (val[1]->type) {
             case CS_VALUE_REAL:
-              cs_real_sub(mut, 2, &val[1], 1, &closure->stacks[a]);
+              cs_real_sub(mut, 2, &val[1], 1, &env->stacks[a]);
               break;
 
             case CS_VALUE_INSTANCE:
               temp1 = cs_mutator_member_find(mut, val[1], "__sub", 5);
               if (temp1) {
                 if (temp1->type == CS_VALUE_BUILTIN)
-                  temp1->builtin(mut, 2, &val[1], 1, &closure->stacks[a]);
+                  temp1->builtin(mut, 2, &val[1], 1, &env->stacks[a]);
                 else {
-                  closure->stacks[a] = CS_NIL;
+                  env->stacks[a] = CS_NIL;
                   cs_mutator_raise(mut, cs_mutator_easy_error(mut,
                     CS_CLASS_TYPEERROR, "%s.__sub is not callable",
                     val[1]->klass->classname));
@@ -507,7 +521,7 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
               break;
 
             default:
-              sub_error: closure->stacks[a] = CS_NIL;
+              sub_error: env->stacks[a] = CS_NIL;
               cs_mutator_raise(mut, cs_mutator_easy_error(mut,
                 CS_CLASS_TYPEERROR, "invalid operands for Object.__sub"));
               break;
@@ -522,24 +536,24 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
           val[1] = load_rk_value(b);
           val[2] = load_rk_value(c);
           if (cs_value_isint(val[1])) {
-            cs_int_mul(mut, 2, &val[1], 1, &closure->stacks[a]);
+            cs_int_mul(mut, 2, &val[1], 1, &env->stacks[a]);
             break;
           }
           switch (val[1]->type) {
             case CS_VALUE_REAL:
-              cs_real_mul(mut, 2, &val[1], 1, &closure->stacks[a]);
+              cs_real_mul(mut, 2, &val[1], 1, &env->stacks[a]);
               break;
             case CS_VALUE_STRING:
-              cs_string_mul(mut, 2, &val[1], 1, &closure->stacks[a]);
+              cs_string_mul(mut, 2, &val[1], 1, &env->stacks[a]);
               break;
 
             case CS_VALUE_INSTANCE:
               temp1 = cs_mutator_member_find(mut, val[1], "__mul", 5);
               if (temp1) {
                 if (temp1->type == CS_VALUE_BUILTIN)
-                  temp1->builtin(mut, 2, &val[1], 1, &closure->stacks[a]);
+                  temp1->builtin(mut, 2, &val[1], 1, &env->stacks[a]);
                 else {
-                  closure->stacks[a] = CS_NIL;
+                  env->stacks[a] = CS_NIL;
                   cs_mutator_raise(mut, cs_mutator_easy_error(mut,
                     CS_CLASS_TYPEERROR, "%s.__mul is not callable",
                     val[1]->klass->classname));
@@ -549,7 +563,7 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
               break;
 
             default:
-              mul_error: closure->stacks[a] = CS_NIL;
+              mul_error: env->stacks[a] = CS_NIL;
               cs_mutator_raise(mut, cs_mutator_easy_error(mut,
                 CS_CLASS_TYPEERROR, "invalid operands for Object.__mul"));
               break;
@@ -564,21 +578,21 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
           val[1] = load_rk_value(b);
           val[2] = load_rk_value(c);
           if (cs_value_isint(val[1])) {
-            cs_int_div(mut, 2, &val[1], 1, &closure->stacks[a]);
+            cs_int_div(mut, 2, &val[1], 1, &env->stacks[a]);
             break;
           }
           switch (val[1]->type) {
             case CS_VALUE_REAL:
-              cs_real_div(mut, 2, &val[1], 1, &closure->stacks[a]);
+              cs_real_div(mut, 2, &val[1], 1, &env->stacks[a]);
               break;
 
             case CS_VALUE_INSTANCE:
               temp1 = cs_mutator_member_find(mut, val[1], "__div", 5);
               if (temp1) {
                 if (temp1->type == CS_VALUE_BUILTIN)
-                  temp1->builtin(mut, 2, &val[1], 1, &closure->stacks[a]);
+                  temp1->builtin(mut, 2, &val[1], 1, &env->stacks[a]);
                 else {
-                  closure->stacks[a] = CS_NIL;
+                  env->stacks[a] = CS_NIL;
                   cs_mutator_raise(mut, cs_mutator_easy_error(mut,
                     CS_CLASS_TYPEERROR, "%s.__div is not callable",
                     val[1]->klass->classname));
@@ -588,7 +602,7 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
               break;
 
             default:
-              div_error: closure->stacks[a] = CS_NIL;
+              div_error: env->stacks[a] = CS_NIL;
               cs_mutator_raise(mut, cs_mutator_easy_error(mut,
                 CS_CLASS_TYPEERROR, "invalid operands for Object.__div"));
               break;
@@ -603,7 +617,7 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
           val[1] = load_rk_value(b);
           val[2] = load_rk_value(c);
           if (cs_value_isint(val[1])) {
-            cs_int_mod(mut, 2, &val[1], 1, &closure->stacks[a]);
+            cs_int_mod(mut, 2, &val[1], 1, &env->stacks[a]);
             break;
           }
           switch (val[1]->type) {
@@ -611,9 +625,9 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
               temp1 = cs_mutator_member_find(mut, val[1], "__mod", 5);
               if (temp1) {
                 if (temp1->type == CS_VALUE_BUILTIN)
-                  temp1->builtin(mut, 2, &val[1], 1, &closure->stacks[a]);
+                  temp1->builtin(mut, 2, &val[1], 1, &env->stacks[a]);
                 else {
-                  closure->stacks[a] = CS_NIL;
+                  env->stacks[a] = CS_NIL;
                   cs_mutator_raise(mut, cs_mutator_easy_error(mut,
                     CS_CLASS_TYPEERROR, "%s.__mod is not callable",
                     val[1]->klass->classname));
@@ -623,7 +637,7 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
               break;
 
             default:
-              mod_error: closure->stacks[a] = CS_NIL;
+              mod_error: env->stacks[a] = CS_NIL;
               cs_mutator_raise(mut, cs_mutator_easy_error(mut,
                 CS_CLASS_TYPEERROR, "invalid operands for Object.__mod"));
               break;
@@ -638,21 +652,21 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
           val[1] = load_rk_value(b);
           val[2] = load_rk_value(c);
           if (cs_value_isint(val[1])) {
-            cs_int_pow(mut, 2, &val[1], 1, &closure->stacks[a]);
+            cs_int_pow(mut, 2, &val[1], 1, &env->stacks[a]);
             break;
           }
           switch (val[1]->type) {
             case CS_VALUE_REAL:
-              cs_real_pow(mut, 2, &val[1], 1, &closure->stacks[a]);
+              cs_real_pow(mut, 2, &val[1], 1, &env->stacks[a]);
               break;
 
             case CS_VALUE_INSTANCE:
               temp1 = cs_mutator_member_find(mut, val[1], "__pow", 5);
               if (temp1) {
                 if (temp1->type == CS_VALUE_BUILTIN)
-                  temp1->builtin(mut, 2, &val[1], 1, &closure->stacks[a]);
+                  temp1->builtin(mut, 2, &val[1], 1, &env->stacks[a]);
                 else {
-                  closure->stacks[a] = CS_NIL;
+                  env->stacks[a] = CS_NIL;
                   cs_mutator_raise(mut, cs_mutator_easy_error(mut,
                     CS_CLASS_TYPEERROR, "%s.__pow is not callable",
                     val[1]->klass->classname));
@@ -662,7 +676,7 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
               break;
 
             default:
-              pow_error: closure->stacks[a] = CS_NIL;
+              pow_error: env->stacks[a] = CS_NIL;
               cs_mutator_raise(mut, cs_mutator_easy_error(mut,
                 CS_CLASS_TYPEERROR, "invalid operands for Object.__pow"));
               break;
@@ -677,21 +691,21 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
           val[1] = load_rk_value(b);
           val[2] = load_rk_value(c);
           if (cs_value_isint(val[1])) {
-            cs_int_neg(mut, 2, &val[1], 1, &closure->stacks[a]);
+            cs_int_neg(mut, 2, &val[1], 1, &env->stacks[a]);
             break;
           }
           switch (val[1]->type) {
             case CS_VALUE_REAL:
-              cs_real_neg(mut, 2, &val[1], 1, &closure->stacks[a]);
+              cs_real_neg(mut, 2, &val[1], 1, &env->stacks[a]);
               break;
 
             case CS_VALUE_INSTANCE:
               temp1 = cs_mutator_member_find(mut, val[1], "__neg", 5);
               if (temp1) {
                 if (temp1->type == CS_VALUE_BUILTIN)
-                  temp1->builtin(mut, 2, &val[1], 1, &closure->stacks[a]);
+                  temp1->builtin(mut, 2, &val[1], 1, &env->stacks[a]);
                 else {
-                  closure->stacks[a] = CS_NIL;
+                  env->stacks[a] = CS_NIL;
                   cs_mutator_raise(mut, cs_mutator_easy_error(mut,
                     CS_CLASS_TYPEERROR, "%s.__neg is not callable",
                     val[1]->klass->classname));
@@ -701,7 +715,7 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
               break;
 
             default:
-              neg_error: closure->stacks[a] = CS_NIL;
+              neg_error: env->stacks[a] = CS_NIL;
               cs_mutator_raise(mut, cs_mutator_easy_error(mut,
                 CS_CLASS_TYPEERROR, "invalid operands for Object.__neg"));
               break;
@@ -716,7 +730,7 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
           val[1] = load_rk_value(b);
           val[2] = load_rk_value(c);
           if (cs_value_isint(val[1])) {
-            cs_int_and(mut, 2, &val[1], 1, &closure->stacks[a]);
+            cs_int_and(mut, 2, &val[1], 1, &env->stacks[a]);
             break;
           }
           switch (val[1]->type) {
@@ -724,9 +738,9 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
               temp1 = cs_mutator_member_find(mut, val[1], "__and", 5);
               if (temp1) {
                 if (temp1->type == CS_VALUE_BUILTIN)
-                  temp1->builtin(mut, 2, &val[1], 1, &closure->stacks[a]);
+                  temp1->builtin(mut, 2, &val[1], 1, &env->stacks[a]);
                 else {
-                  closure->stacks[a] = CS_NIL;
+                  env->stacks[a] = CS_NIL;
                   cs_mutator_raise(mut, cs_mutator_easy_error(mut,
                     CS_CLASS_TYPEERROR, "%s.__and is not callable",
                     val[1]->klass->classname));
@@ -736,7 +750,7 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
               break;
 
             default:
-              and_error: closure->stacks[a] = CS_NIL;
+              and_error: env->stacks[a] = CS_NIL;
               cs_mutator_raise(mut, cs_mutator_easy_error(mut,
                 CS_CLASS_TYPEERROR, "invalid operands for Object.__and"));
               break;
@@ -751,7 +765,7 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
           val[1] = load_rk_value(b);
           val[2] = load_rk_value(c);
           if (cs_value_isint(val[1])) {
-            cs_int_or(mut, 2, &val[1], 1, &closure->stacks[a]);
+            cs_int_or(mut, 2, &val[1], 1, &env->stacks[a]);
             break;
           }
           switch (val[1]->type) {
@@ -759,9 +773,9 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
               temp1 = cs_mutator_member_find(mut, val[1], "__or", 5);
               if (temp1) {
                 if (temp1->type == CS_VALUE_BUILTIN)
-                  temp1->builtin(mut, 2, &val[1], 1, &closure->stacks[a]);
+                  temp1->builtin(mut, 2, &val[1], 1, &env->stacks[a]);
                 else {
-                  closure->stacks[a] = CS_NIL;
+                  env->stacks[a] = CS_NIL;
                   cs_mutator_raise(mut, cs_mutator_easy_error(mut,
                     CS_CLASS_TYPEERROR, "%s.__or is not callable",
                     val[1]->klass->classname));
@@ -771,7 +785,7 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
               break;
 
             default:
-              or_error: closure->stacks[a] = CS_NIL;
+              or_error: env->stacks[a] = CS_NIL;
               cs_mutator_raise(mut, cs_mutator_easy_error(mut,
                 CS_CLASS_TYPEERROR, "invalid operands for Object.__or"));
               break;
@@ -786,7 +800,7 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
           val[1] = load_rk_value(b);
           val[2] = load_rk_value(c);
           if (cs_value_isint(val[1])) {
-            cs_int_xor(mut, 2, &val[1], 1, &closure->stacks[a]);
+            cs_int_xor(mut, 2, &val[1], 1, &env->stacks[a]);
             break;
           }
           switch (val[1]->type) {
@@ -794,9 +808,9 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
               temp1 = cs_mutator_member_find(mut, val[1], "__xor", 5);
               if (temp1) {
                 if (temp1->type == CS_VALUE_BUILTIN)
-                  temp1->builtin(mut, 2, &val[1], 1, &closure->stacks[a]);
+                  temp1->builtin(mut, 2, &val[1], 1, &env->stacks[a]);
                 else {
-                  closure->stacks[a] = CS_NIL;
+                  env->stacks[a] = CS_NIL;
                   cs_mutator_raise(mut, cs_mutator_easy_error(mut,
                     CS_CLASS_TYPEERROR, "%s.__xor is not callable",
                     val[1]->klass->classname));
@@ -806,7 +820,7 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
               break;
 
             default:
-              xor_error: closure->stacks[a] = CS_NIL;
+              xor_error: env->stacks[a] = CS_NIL;
               cs_mutator_raise(mut, cs_mutator_easy_error(mut,
                 CS_CLASS_TYPEERROR, "invalid operands for Object.__xor"));
               break;
@@ -821,7 +835,7 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
           val[1] = load_rk_value(b);
           val[2] = load_rk_value(c);
           if (cs_value_isint(val[1])) {
-            cs_int_not(mut, 2, &val[1], 1, &closure->stacks[a]);
+            cs_int_not(mut, 2, &val[1], 1, &env->stacks[a]);
             break;
           }
           switch (val[1]->type) {
@@ -829,9 +843,9 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
               temp1 = cs_mutator_member_find(mut, val[1], "__not", 5);
               if (temp1) {
                 if (temp1->type == CS_VALUE_BUILTIN)
-                  temp1->builtin(mut, 2, &val[1], 1, &closure->stacks[a]);
+                  temp1->builtin(mut, 2, &val[1], 1, &env->stacks[a]);
                 else {
-                  closure->stacks[a] = CS_NIL;
+                  env->stacks[a] = CS_NIL;
                   cs_mutator_raise(mut, cs_mutator_easy_error(mut,
                     CS_CLASS_TYPEERROR, "%s.__not is not callable",
                     val[1]->klass->classname));
@@ -841,7 +855,7 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
               break;
 
             default:
-              not_error: closure->stacks[a] = CS_NIL;
+              not_error: env->stacks[a] = CS_NIL;
               cs_mutator_raise(mut, cs_mutator_easy_error(mut,
                 CS_CLASS_TYPEERROR, "invalid operands for Object.__not"));
               break;
@@ -850,7 +864,7 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
 
         case CS_OPCODE_JMP:
           simm = cs_bytecode_get_imm(code);
-          closure->pc += simm-1;
+          env->pc += simm-1;
           break;
 
         case CS_OPCODE_IF:
@@ -862,7 +876,7 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
           switch (val[0]->type) {
             case CS_VALUE_NIL:
             case CS_VALUE_FALSE:
-              closure->pc += simm-1;
+              env->pc += simm-1;
               break;
 
             case CS_VALUE_INSTANCE:
@@ -871,7 +885,7 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
               if (temp1->type == CS_VALUE_BUILTIN) {
                 if (temp1->builtin(mut, 1, &val[1], 1, &temp2) && 
                   temp2 == CS_FALSE)
-                  closure->pc += simm-1;
+                  env->pc += simm-1;
               } else {
                 cs_mutator_raise(mut, cs_mutator_easy_error(mut,
                   CS_CLASS_TYPEERROR, "%s.__bool is not callable",
@@ -885,18 +899,58 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
           }
           break;
 
+        case CS_OPCODE_CLOS:
+          a = cs_bytecode_get_a(code);
+          imm = cs_bytecode_get_imm(code);
+          env->stacks[a] = cs_mutator_new_closure(mut,
+            create_closure(env->closure->cur_func->funcs->buckets[imm]));
+          break;
+
         case CS_OPCODE_RAISE:
           a = cs_bytecode_get_a(code);
-          cs_mutator_raise(mut, closure->stacks[a]);
+          cs_mutator_raise(mut, env->stacks[a]);
           break;
 
         case CS_OPCODE_CATCH:
           a = cs_bytecode_get_a(code);
-          closure->stacks[a] = mut->error_register;
+          env->stacks[a] = mut->error_register;
           mut->error_register = CS_NIL;
           break;
 
+        case CS_OPCODE_CALL:
+          a = cs_bytecode_get_a(code);
+          b = cs_bytecode_get_b(code); // argc = b
+          c = cs_bytecode_get_c(code); // retc = c-1
+          if (!cs_value_isint(env->stacks[a])) {
+            switch(env->stacks[a]->type) {
+              case CS_VALUE_BUILTIN:
+                env->stacks[a]->builtin(mut,
+                  b, &env->stacks[a+1],
+                  c-1, &env->stacks[a]);
+              break;
+
+              case CS_VALUE_CLOSURE:
+                env->pc++;
+                temp_env = invoke(mut, env->stacks[a]->closure);
+                temp_env->parent = env;
+                env = temp_env;
+                goto context_swtich_env;
+              break;
+
+              default:
+                goto call_error;
+                break;
+            }
+          }
+          else {
+            call_error:
+            cs_mutator_raise(mut, cs_mutator_easy_error(mut,
+              CS_CLASS_TYPEERROR, "invalid operands for Object.__call"));
+          }
+          break;
+
         case CS_OPCODE_RET:
+          goto ret_exec; // Return
           break;
 
         default:
@@ -906,11 +960,12 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
       // Error was raised
       if (cs_unlikely(mut->error)) {
         // redirect to exception handler
-        if (closure->cur_func->resq) {
+        if (env->closure->cur_func->resq) {
           mut->error = false;
-          closure->pc = -1; // This is needed
-          closure->ncodes = closure->cur_func->resq->length;
-          closure->codes = (uintptr_t*) closure->cur_func->resq->buckets;
+          env->pc = -1; // This is needed
+          env->ncodes = env->closure->cur_func->resq->length;
+          env->codes =
+            (uintptr_t*) env->closure->cur_func->resq->buckets;
         }
       }
 
@@ -922,10 +977,10 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
       sem_wait(&mut->cs->gc_sync);
     }
 
-    // implicit Return to calling function
-    CsClosure* temp_clos = closure;
-    closure = closure->parent;
-    cs_free_object(temp_clos);
+    // Yield to calling function
+    ret_exec: temp_env = env;
+    env = env->parent;
+    cs_free_object(temp_env);
   }
 
   return NULL;

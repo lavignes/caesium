@@ -17,6 +17,7 @@ typedef enum CsValueType {
   CS_VALUE_CLASS,
   CS_VALUE_INSTANCE,
   CS_VALUE_BUILTIN,
+  CS_VALUE_CLOSURE,
 } CsValueType;
 
 typedef struct CsValueString {
@@ -26,6 +27,7 @@ typedef struct CsValueString {
 } CsValueString;
 
 struct CsMutator;
+struct CsClosure;
 typedef struct CsValueStruct* CsValue;
 
 
@@ -62,6 +64,7 @@ typedef struct CsValueStruct {
         CsArray* array;
         double real;
         CsValueString* string;
+        struct CsClosure* closure;
       };
     };
     uint8_t padding[CS_VALUE_SIZE];

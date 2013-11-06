@@ -44,6 +44,10 @@ void cs_value_cleanup(CsValue value) {
       cs_hash_free(value->dict);
       break;
 
+    case CS_VALUE_CLOSURE:
+      cs_free_object(value->closure);
+      break;
+
     default:
       break;
   }

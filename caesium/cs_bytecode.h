@@ -35,6 +35,7 @@ typedef enum CsOpcode {
   CS_OPCODE_CLOS,    // clos A IMM  -> R[A] = new F[IMM]
   CS_OPCODE_CPYUP,   // cpyup A B C -> R[A].UP[B] = R[C]
   CS_OPCODE_MOVUP,   // movup A B C -> R[A].UP[B] = UP[C]
+  // Number of args = B -- Number of rets = C - 1
   CS_OPCODE_CALL,    // call A B C  -> R[A], ... R[A+C-2] = R[A](R[A+1], ...R[A+B-1])
   CS_OPCODE_RET,     // ret A B     -> return R[A], ... R[A+B-2]
   CS_OPCODE_RAISE,   // raise A     -> e = R[A] goto RESQ

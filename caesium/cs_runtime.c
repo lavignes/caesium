@@ -82,6 +82,21 @@ void cs_runtime_dostring(CsRuntime* cs, const char* u8str) {
   // free((void*) u8str);
 }
 
+static int print(CsMutator* mut,
+  int argc, CsValue* args, int retc, CsValue* rets) {
+  int i;
+  CsValue value;
+  for (i = 0; i < argc; i++) {
+    value = cs_mutator_value_as_string(mut, args[i]);
+    printf("%s\n", cs_value_tostring(value));
+  }
+  return 0;
+}
+
+static void load_builtins(CsRuntime* cs, CsMutator* mut) {
+  cs_hash_insert(cs->globals, "print", 5, cs_mutator_new_builtin(mut, print));
+}
+
 static void create_classes(CsRuntime* cs, CsMutator* mut) {
   // create object class
   cs_initclass_object(mut);
@@ -182,6 +197,7 @@ void cs_runtime_doassembly(CsRuntime* cs, const char* u8str, size_t size) {
   cs_list_push_back(cs->mutators, mut0);
 
   create_classes(cs, mut0);
+  load_builtins(cs, mut0);
 
   CsAssembler* assembler = cs_assembler_new();
   CsByteChunk* chunk = cs_assembler_assemble(assembler, u8str, size);
