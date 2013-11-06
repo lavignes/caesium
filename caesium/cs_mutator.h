@@ -55,6 +55,8 @@ CsValue cs_mutator_new_string_formatted(
 
 CsValue cs_mutator_new_real(CsMutator* mut, double real);
 
+CsValue cs_mutator_new_array(CsMutator* mut, CsArray* array);
+
 CsValue cs_mutator_new_class(
   CsMutator* mut,
   const char* name,

@@ -5,6 +5,7 @@
 #include "cs_error.h"
 #include "cs_numeric.h"
 #include "cs_string.h"
+#include "cs_arrayclass.h"
 #include "cs_unicode.h"
 
 static void* mut_main(void* data) {
@@ -120,6 +121,13 @@ CsValue cs_mutator_new_real(CsMutator* mut, double real) {
   CsValue value = cs_mutator_new_value(mut);
   value->type = CS_VALUE_REAL;
   value->real = real;
+  return value;
+}
+
+CsValue cs_mutator_new_array(CsMutator* mut, CsArray* array) {
+  CsValue value = cs_mutator_new_value(mut);
+  value->type = CS_VALUE_ARRAY;
+  value->array = array;
   return value;
 }
 
@@ -874,6 +882,12 @@ CsValue cs_mutator_value_as_string(CsMutator* mut, CsValue value) {
     case CS_VALUE_STRING:
       return value;
       break;
+
+    case CS_VALUE_ARRAY:
+      if (cs_arrayclass_as_string(mut, 1, &value, 1, &temp1))
+        return temp1;
+      else
+        return NULL;
 
     case CS_VALUE_CLASS:
       return cs_mutator_new_string_formatted(mut,

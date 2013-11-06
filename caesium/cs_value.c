@@ -36,6 +36,10 @@ void cs_value_cleanup(CsValue value) {
       free(value->string);
       break;
 
+    case CS_VALUE_ARRAY:
+      cs_array_free(value->array);
+      break;
+
     case CS_VALUE_INSTANCE:
       cs_hash_free(value->dict);
       break;
