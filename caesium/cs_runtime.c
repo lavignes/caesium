@@ -156,14 +156,15 @@ static void create_classes(CsRuntime* cs, CsMutator* mut) {
 
 static void cleanup_classes() {
   cs_freeclass_object(CS_CLASS_OBJECT);
-  cs_freeclass_object(CS_CLASS_TRUE);
-  cs_freeclass_object(CS_CLASS_FALSE);
-  cs_freeclass_object(CS_CLASS_INT);
-  cs_freeclass_object(CS_CLASS_REAL);
-  cs_freeclass_object(CS_CLASS_STRING);
+  cs_freeclass_true(CS_CLASS_TRUE);
+  cs_freeclass_false(CS_CLASS_FALSE);
+  cs_freeclass_int(CS_CLASS_INT);
+  cs_freeclass_real(CS_CLASS_REAL);
+  cs_freeclass_string(CS_CLASS_STRING);
+  cs_freeclass_array(CS_CLASS_ARRAY);
   cs_freeclass_error(CS_CLASS_ERROR);
-  cs_freeclass_error(CS_CLASS_NAMEERROR);
-  cs_freeclass_error(CS_CLASS_TYPEERROR);
+  cs_freeclass_nameerror(CS_CLASS_NAMEERROR);
+  cs_freeclass_typeerror(CS_CLASS_TYPEERROR);
 }
 
 void cs_runtime_doassembly(CsRuntime* cs, const char* u8str, size_t size) {

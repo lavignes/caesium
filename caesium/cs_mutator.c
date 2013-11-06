@@ -261,7 +261,7 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
   CsByteConst* konst;
   CsPair* pair;
   CsValue val[3];
-  CsValue temp1;
+  CsValue temp1, temp2;
   int a, b, c, simm;
 
   CsClosure* closure = create_stack_frame(chunk->entry);
@@ -324,6 +324,29 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
             printf("%s\n", cs_value_tostring(temp1));
           break;
 
+        case CS_OPCODE_NEW:
+          a = cs_bytecode_get_a(code);
+          b = cs_bytecode_get_b(code);
+          if (closure->stacks[b]->type == CS_VALUE_CLASS) {
+            temp1 = cs_mutator_member_find(mut, closure->stacks[b], "__new", 5);
+            if (temp1->type == CS_VALUE_BUILTIN)
+              temp1->builtin(mut,
+                1, &closure->stacks[b],
+                1, &closure->stacks[a]);
+            else {
+              closure->stacks[a] = CS_NIL;
+              cs_mutator_raise(mut, cs_mutator_easy_error(mut,
+                CS_CLASS_TYPEERROR, "%s.__new is not callable",
+                closure->stacks[b]->klass->classname));
+            }
+          }
+          else {
+            closure->stacks[a] = CS_NIL;
+            cs_mutator_raise(mut, cs_mutator_easy_error(mut,
+              CS_CLASS_TYPEERROR, "Cannot instantiate non-class"));
+          }
+          break;
+
         case CS_OPCODE_ADD:
           a = cs_bytecode_get_a(code);
           b = cs_bytecode_get_b(code);
@@ -333,6 +356,7 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
           val[2] = load_rk_value(c);
           if (cs_value_isint(val[1])) {
             cs_int_add(mut, 2, &val[1], 1, &closure->stacks[a]);
+            break;
           }
           switch (val[1]->type) {
             case CS_VALUE_REAL:
@@ -366,7 +390,7 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
           }
           break;
 
-        case CS_OPCODE_ADD:
+        case CS_OPCODE_SUB:
           a = cs_bytecode_get_a(code);
           b = cs_bytecode_get_b(code);
           c = cs_bytecode_get_c(code);
@@ -375,6 +399,7 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
           val[2] = load_rk_value(c);
           if (cs_value_isint(val[1])) {
             cs_int_sub(mut, 2, &val[1], 1, &closure->stacks[a]);
+            break;
           }
           switch (val[1]->type) {
             case CS_VALUE_REAL:
@@ -408,32 +433,27 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
           a = cs_bytecode_get_a(code);
           b = cs_bytecode_get_b(code);
           c = cs_bytecode_get_c(code);
+          // Read the args as konst or value
           val[1] = load_rk_value(b);
           val[2] = load_rk_value(c);
           if (cs_value_isint(val[1])) {
-            if ((temp1 = cs_int_mul(mut, val[1], val[2])) == NULL)
-              closure->stacks[a] = CS_NIL;
-            else closure->stacks[a] = temp1;
+            cs_int_mul(mut, 2, &val[1], 1, &closure->stacks[a]);
             break;
           }
           switch (val[1]->type) {
             case CS_VALUE_REAL:
-              if ((temp1 = cs_real_mul(mut, val[1], val[2])) == NULL)
-                closure->stacks[a] = CS_NIL;
-              else closure->stacks[a] = temp1;
+              cs_real_mul(mut, 2, &val[1], 1, &closure->stacks[a]);
               break;
 
             case CS_VALUE_STRING:
-              if ((temp1 = cs_string_mul(mut, val[1], val[2])) == NULL)
-                closure->stacks[a] = CS_NIL;
-              else closure->stacks[a] = temp1;
+              cs_string_mul(mut, 2, &val[1], 1, &closure->stacks[a]);
               break;
 
             case CS_VALUE_INSTANCE:
               temp1 = cs_mutator_member_find(mut, val[1], "__mul", 5);
               if (temp1) {
                 if (temp1->type == CS_VALUE_BUILTIN)
-                  closure->stacks[a] = temp1->builtin2(mut, val[1], val[2]);
+                  temp1->builtin(mut, 2, &val[1], 1, &closure->stacks[a]);
                 else {
                   closure->stacks[a] = CS_NIL;
                   cs_mutator_raise(mut, cs_mutator_easy_error(mut,
@@ -456,26 +476,23 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
           a = cs_bytecode_get_a(code);
           b = cs_bytecode_get_b(code);
           c = cs_bytecode_get_c(code);
+          // Read the args as konst or value
           val[1] = load_rk_value(b);
           val[2] = load_rk_value(c);
           if (cs_value_isint(val[1])) {
-            if ((temp1 = cs_int_div(mut, val[1], val[2])) == NULL)
-              closure->stacks[a] = CS_NIL;
-            else closure->stacks[a] = temp1;
+            cs_int_div(mut, 2, &val[1], 1, &closure->stacks[a]);
             break;
           }
           switch (val[1]->type) {
             case CS_VALUE_REAL:
-              if ((temp1 = cs_real_div(mut, val[1], val[2])) == NULL)
-                closure->stacks[a] = CS_NIL;
-              else closure->stacks[a] = temp1;
+              cs_real_div(mut, 2, &val[1], 1, &closure->stacks[a]);
               break;
 
             case CS_VALUE_INSTANCE:
               temp1 = cs_mutator_member_find(mut, val[1], "__div", 5);
               if (temp1) {
                 if (temp1->type == CS_VALUE_BUILTIN)
-                  closure->stacks[a] = temp1->builtin2(mut, val[1], val[2]);
+                  temp1->builtin(mut, 2, &val[1], 1, &closure->stacks[a]);
                 else {
                   closure->stacks[a] = CS_NIL;
                   cs_mutator_raise(mut, cs_mutator_easy_error(mut,
@@ -498,12 +515,11 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
           a = cs_bytecode_get_a(code);
           b = cs_bytecode_get_b(code);
           c = cs_bytecode_get_c(code);
+          // Read the args as konst or value
           val[1] = load_rk_value(b);
           val[2] = load_rk_value(c);
           if (cs_value_isint(val[1])) {
-            if ((temp1 = cs_int_mod(mut, val[1], val[2])) == NULL)
-              closure->stacks[a] = CS_NIL;
-            else closure->stacks[a] = temp1;
+            cs_int_mod(mut, 2, &val[1], 1, &closure->stacks[a]);
             break;
           }
           switch (val[1]->type) {
@@ -511,7 +527,7 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
               temp1 = cs_mutator_member_find(mut, val[1], "__mod", 5);
               if (temp1) {
                 if (temp1->type == CS_VALUE_BUILTIN)
-                  closure->stacks[a] = temp1->builtin2(mut, val[1], val[2]);
+                  temp1->builtin(mut, 2, &val[1], 1, &closure->stacks[a]);
                 else {
                   closure->stacks[a] = CS_NIL;
                   cs_mutator_raise(mut, cs_mutator_easy_error(mut,
@@ -534,26 +550,23 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
           a = cs_bytecode_get_a(code);
           b = cs_bytecode_get_b(code);
           c = cs_bytecode_get_c(code);
+          // Read the args as konst or value
           val[1] = load_rk_value(b);
           val[2] = load_rk_value(c);
           if (cs_value_isint(val[1])) {
-            if ((temp1 = cs_int_pow(mut, val[1], val[2])) == NULL)
-              closure->stacks[a] = CS_NIL;
-            else closure->stacks[a] = temp1;
+            cs_int_pow(mut, 2, &val[1], 1, &closure->stacks[a]);
             break;
           }
           switch (val[1]->type) {
             case CS_VALUE_REAL:
-              if ((temp1 = cs_real_pow(mut, val[1], val[2])) == NULL)
-                closure->stacks[a] = CS_NIL;
-              else closure->stacks[a] = temp1;
+              cs_real_pow(mut, 2, &val[1], 1, &closure->stacks[a]);
               break;
 
             case CS_VALUE_INSTANCE:
               temp1 = cs_mutator_member_find(mut, val[1], "__pow", 5);
               if (temp1) {
                 if (temp1->type == CS_VALUE_BUILTIN)
-                  closure->stacks[a] = temp1->builtin2(mut, val[1], val[2]);
+                  temp1->builtin(mut, 2, &val[1], 1, &closure->stacks[a]);
                 else {
                   closure->stacks[a] = CS_NIL;
                   cs_mutator_raise(mut, cs_mutator_easy_error(mut,
@@ -575,31 +588,30 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
         case CS_OPCODE_NEG:
           a = cs_bytecode_get_a(code);
           b = cs_bytecode_get_b(code);
+          c = cs_bytecode_get_c(code);
+          // Read the args as konst or value
           val[1] = load_rk_value(b);
+          val[2] = load_rk_value(c);
           if (cs_value_isint(val[1])) {
-            if ((temp1 = cs_int_neg(mut, val[1])) == NULL)
-              closure->stacks[a] = CS_NIL;
-            else closure->stacks[a] = temp1;
+            cs_int_neg(mut, 2, &val[1], 1, &closure->stacks[a]);
             break;
           }
           switch (val[1]->type) {
             case CS_VALUE_REAL:
-              if ((temp1 = cs_real_neg(mut, val[1])) == NULL)
-                closure->stacks[a] = CS_NIL;
-              else closure->stacks[a] = temp1;
+              cs_real_neg(mut, 2, &val[1], 1, &closure->stacks[a]);
               break;
 
             case CS_VALUE_INSTANCE:
               temp1 = cs_mutator_member_find(mut, val[1], "__neg", 5);
               if (temp1) {
                 if (temp1->type == CS_VALUE_BUILTIN)
-                  closure->stacks[a] = temp1->builtin1(mut, val[1]);
+                  temp1->builtin(mut, 2, &val[1], 1, &closure->stacks[a]);
                 else {
                   closure->stacks[a] = CS_NIL;
                   cs_mutator_raise(mut, cs_mutator_easy_error(mut,
                     CS_CLASS_TYPEERROR, "%s.__neg is not callable",
                     val[1]->klass->classname));
-                }
+                } 
               }
               else goto neg_error;
               break;
@@ -616,12 +628,11 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
           a = cs_bytecode_get_a(code);
           b = cs_bytecode_get_b(code);
           c = cs_bytecode_get_c(code);
+          // Read the args as konst or value
           val[1] = load_rk_value(b);
           val[2] = load_rk_value(c);
           if (cs_value_isint(val[1])) {
-            if ((temp1 = cs_int_and(mut, val[1], val[2])) == NULL)
-              closure->stacks[a] = CS_NIL;
-            else closure->stacks[a] = temp1;
+            cs_int_and(mut, 2, &val[1], 1, &closure->stacks[a]);
             break;
           }
           switch (val[1]->type) {
@@ -629,7 +640,7 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
               temp1 = cs_mutator_member_find(mut, val[1], "__and", 5);
               if (temp1) {
                 if (temp1->type == CS_VALUE_BUILTIN)
-                  closure->stacks[a] = temp1->builtin2(mut, val[1], val[2]);
+                  temp1->builtin(mut, 2, &val[1], 1, &closure->stacks[a]);
                 else {
                   closure->stacks[a] = CS_NIL;
                   cs_mutator_raise(mut, cs_mutator_easy_error(mut,
@@ -652,20 +663,19 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
           a = cs_bytecode_get_a(code);
           b = cs_bytecode_get_b(code);
           c = cs_bytecode_get_c(code);
+          // Read the args as konst or value
           val[1] = load_rk_value(b);
           val[2] = load_rk_value(c);
           if (cs_value_isint(val[1])) {
-            if ((temp1 = cs_int_or(mut, val[1], val[2])) == NULL)
-              closure->stacks[a] = CS_NIL;
-            else closure->stacks[a] = temp1;
+            cs_int_or(mut, 2, &val[1], 1, &closure->stacks[a]);
             break;
           }
           switch (val[1]->type) {
             case CS_VALUE_INSTANCE:
-              temp1 = cs_mutator_member_find(mut, val[1], "__or", 4);
+              temp1 = cs_mutator_member_find(mut, val[1], "__or", 5);
               if (temp1) {
                 if (temp1->type == CS_VALUE_BUILTIN)
-                  closure->stacks[a] = temp1->builtin2(mut, val[1], val[2]);
+                  temp1->builtin(mut, 2, &val[1], 1, &closure->stacks[a]);
                 else {
                   closure->stacks[a] = CS_NIL;
                   cs_mutator_raise(mut, cs_mutator_easy_error(mut,
@@ -688,12 +698,11 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
           a = cs_bytecode_get_a(code);
           b = cs_bytecode_get_b(code);
           c = cs_bytecode_get_c(code);
+          // Read the args as konst or value
           val[1] = load_rk_value(b);
           val[2] = load_rk_value(c);
           if (cs_value_isint(val[1])) {
-            if ((temp1 = cs_int_xor(mut, val[1], val[2])) == NULL)
-              closure->stacks[a] = CS_NIL;
-            else closure->stacks[a] = temp1;
+            cs_int_xor(mut, 2, &val[1], 1, &closure->stacks[a]);
             break;
           }
           switch (val[1]->type) {
@@ -701,7 +710,7 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
               temp1 = cs_mutator_member_find(mut, val[1], "__xor", 5);
               if (temp1) {
                 if (temp1->type == CS_VALUE_BUILTIN)
-                  closure->stacks[a] = temp1->builtin2(mut, val[1], val[2]);
+                  temp1->builtin(mut, 2, &val[1], 1, &closure->stacks[a]);
                 else {
                   closure->stacks[a] = CS_NIL;
                   cs_mutator_raise(mut, cs_mutator_easy_error(mut,
@@ -723,11 +732,12 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
         case CS_OPCODE_NOT:
           a = cs_bytecode_get_a(code);
           b = cs_bytecode_get_b(code);
+          c = cs_bytecode_get_c(code);
+          // Read the args as konst or value
           val[1] = load_rk_value(b);
+          val[2] = load_rk_value(c);
           if (cs_value_isint(val[1])) {
-            if ((temp1 = cs_int_not(mut, val[1])) == NULL)
-              closure->stacks[a] = CS_NIL;
-            else closure->stacks[a] = temp1;
+            cs_int_not(mut, 2, &val[1], 1, &closure->stacks[a]);
             break;
           }
           switch (val[1]->type) {
@@ -735,13 +745,13 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
               temp1 = cs_mutator_member_find(mut, val[1], "__not", 5);
               if (temp1) {
                 if (temp1->type == CS_VALUE_BUILTIN)
-                  closure->stacks[a] = temp1->builtin1(mut, val[1]);
+                  temp1->builtin(mut, 2, &val[1], 1, &closure->stacks[a]);
                 else {
                   closure->stacks[a] = CS_NIL;
                   cs_mutator_raise(mut, cs_mutator_easy_error(mut,
                     CS_CLASS_TYPEERROR, "%s.__not is not callable",
                     val[1]->klass->classname));
-                }
+                } 
               }
               else goto not_error;
               break;
@@ -775,7 +785,8 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
               // Object implements __bool
               temp1 = cs_mutator_member_find(mut, val[1], "__bool", 6);
               if (temp1->type == CS_VALUE_BUILTIN) {
-                if (temp1->builtin1(mut, val[1]) == CS_FALSE)
+                if (temp1->builtin(mut, 1, &val[1], 1, &temp2) && 
+                  temp2 == CS_FALSE)
                   closure->pc += simm-1;
               } else {
                 cs_mutator_raise(mut, cs_mutator_easy_error(mut,
@@ -872,8 +883,10 @@ CsValue cs_mutator_value_as_string(CsMutator* mut, CsValue value) {
     case CS_VALUE_INSTANCE:
       temp1 = cs_mutator_member_find(mut, value, "__as_string", 11);
       if (temp1) {
-        if (temp1->type == CS_VALUE_BUILTIN)
-          return temp1->builtin1(mut, value);
+        if (temp1->type == CS_VALUE_BUILTIN) {
+          temp1->builtin(mut, 1, &value, 1, &temp1);
+          return temp1;
+        }
         else {
           cs_mutator_raise(mut, cs_mutator_easy_error(mut,
             CS_CLASS_TYPEERROR, "%s.__as_string is not callable",

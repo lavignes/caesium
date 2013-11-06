@@ -17,7 +17,6 @@ typedef enum CsValueType {
   CS_VALUE_CLASS,
   CS_VALUE_INSTANCE,
   CS_VALUE_BUILTIN,
-  CS_VALUE_BUILTIN_VA,
 } CsValueType;
 
 typedef struct CsValueString {
@@ -73,6 +72,7 @@ typedef struct CsValueStruct {
 extern CsValue CS_NIL;
 extern CsValue CS_TRUE;
 extern CsValue CS_FALSE;
+extern CsValue CS_EPSILON; // The empty string
 
 // test whether a value is an integer
 #define cs_value_isint(value) (((intptr_t) value) & 0x1)
