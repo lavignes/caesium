@@ -1,7 +1,6 @@
 #include "cs_array.h"
 
 static void array_grow(CsArray* arr) {
-  cs_debug("array doubling\n");
   size_t i;
   arr->size *= 2;
   arr->buckets = realloc(arr->buckets, sizeof(void*) * arr->size);
@@ -50,6 +49,22 @@ bool cs_array_insert(CsArray* arr, long pos, void* data) {
   if (arr->length == arr->size)
     array_grow(arr);
   return true;
+}
+
+CsArray* cs_array_copy(CsArray* arr) {
+  CsArray* cpy;
+  size_t i = 0;
+  cpy = cs_alloc_object(CsArray);
+  if (cs_unlikely(cpy == NULL))
+    cs_exit(CS_REASON_NOMEM);
+  cpy->size = arr->size;
+  cpy->length = arr->length;
+  cpy->buckets = malloc(sizeof(void*) * arr->size);
+  if (cpy->buckets == NULL)
+    cs_exit(CS_REASON_NOMEM);
+  for (i = 0; i < cpy->size; i++)
+    cpy->buckets[i] = arr->buckets[i];
+  return cpy;
 }
 
 bool cs_array_remove(CsArray* arr, long pos, void* data) {

@@ -6,7 +6,9 @@ CsValue CS_CLASS_ARRAY;
 
 static int __new(CsMutator* mut,
   int argc, CsValue* args, int retc, CsValue* rets) {
-  RET = cs_mutator_new_array(mut, cs_array_new());
+  CsArray* array = cs_array_new();
+  cs_array_insert(array, -1, cs_value_fromint(42));
+  RET = cs_mutator_new_array(mut, array);
   return 1;
 }
 
@@ -49,15 +51,35 @@ int cs_arrayclass_as_string(CsMutator* mut,
   return 1;
 }
 
+int cs_arrayclass_add(CsMutator* mut,
+  int argc, CsValue* args, int retc, CsValue* rets) {
+  size_t i;
+  CsValue temp;
+  if (!cs_value_isint(OTHER) && OTHER->type == CS_VALUE_ARRAY) {
+    temp = cs_mutator_new_array(mut, cs_array_copy(cs_value_toarray(SELF)));
+    for (i = 0; i < cs_value_toarray(OTHER)->length; ++i) {
+      cs_array_insert(cs_value_toarray(temp), -1,
+        cs_value_toarray(OTHER)->buckets[i]);
+    }
+    RET = temp;
+    return 1;
+  }
+  cs_mutator_raise(mut, cs_mutator_easy_error(mut,
+    CS_CLASS_TYPEERROR, "invalid operands for Array.__add"));
+  return 0;
+}
+
 CsValue cs_initclass_array(CsMutator* mut) {
   CsHash* dict = cs_hash_new();
   CsArray* bases = cs_array_new();
 
-   cs_hash_insert(dict, "__as_string", 11,
-     cs_mutator_new_builtin(mut, cs_arrayclass_as_string));
+  cs_hash_insert(dict, "__as_string", 11,
+    cs_mutator_new_builtin(mut, cs_arrayclass_as_string));
 
-  cs_hash_insert(dict, "__new", 5,
-     cs_mutator_new_builtin(mut, __new));
+  cs_hash_insert(dict, "__new", 5, cs_mutator_new_builtin(mut, __new));
+
+  cs_hash_insert(dict, "__add", 5,
+    cs_mutator_new_builtin(mut, cs_arrayclass_add));
 
   cs_array_insert(bases, -1, CS_CLASS_OBJECT);
   CS_CLASS_ARRAY = cs_mutator_new_class(mut, "Array", dict, bases);

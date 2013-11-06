@@ -66,6 +66,8 @@ CsValue cs_mutator_copy_string(
     cs_exit(CS_REASON_NOMEM);
   memcpy((char*) value->string->u8str, u8str, size);
   value->string->size = size;
+  // Force null-termination
+  *((char*) (value->string->u8str + size)) = 0;
   value->string->length = length;
   return value;
 }
@@ -370,9 +372,11 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
             case CS_VALUE_REAL:
               cs_real_add(mut, 2, &val[1], 1, &closure->stacks[a]);
               break;
-
             case CS_VALUE_STRING:
               cs_string_add(mut, 2, &val[1], 1, &closure->stacks[a]);
+              break;
+            case CS_VALUE_ARRAY:
+              cs_arrayclass_add(mut, 2, &val[1], 1, &closure->stacks[a]);
               break;
 
             case CS_VALUE_INSTANCE:
@@ -452,7 +456,6 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
             case CS_VALUE_REAL:
               cs_real_mul(mut, 2, &val[1], 1, &closure->stacks[a]);
               break;
-
             case CS_VALUE_STRING:
               cs_string_mul(mut, 2, &val[1], 1, &closure->stacks[a]);
               break;

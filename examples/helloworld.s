@@ -4,6 +4,9 @@
   puts 0
   new 0 0
   puts 0
+  add 0 0 0
+  add 0 0 0
+  puts 0
   ret 0 1
   .resq
     catch 0
