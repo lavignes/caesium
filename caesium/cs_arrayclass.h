@@ -12,6 +12,12 @@ int cs_arrayclass_as_string(CsMutator* mut,
 int cs_arrayclass_add(CsMutator* mut,
   int argc, CsValue* args, int retc, CsValue* rets);
 
+int cs_arrayclass_get(CsMutator* mut,
+  int argc, CsValue* args, int retc, CsValue* rets);
+
+int cs_arrayclass_set(CsMutator* mut,
+  int argc, CsValue* args, int retc, CsValue* rets);
+
 CsValue cs_initclass_array(CsMutator* mut);
 void cs_freeclass_array(CsValue klass);
 

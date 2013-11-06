@@ -69,6 +69,47 @@ int cs_arrayclass_add(CsMutator* mut,
   return 0;
 }
 
+int cs_arrayclass_get(CsMutator* mut,
+  int argc, CsValue* args, int retc, CsValue* rets) {
+  CsValue value;
+  if (cs_value_isint(OTHER)) {
+    if (cs_array_find(cs_value_toarray(SELF), cs_value_toint(OTHER),
+      (void**) &value)) {
+      RET = value;
+      return 1;
+    }
+    else {
+      cs_mutator_raise(mut, cs_mutator_easy_error(mut,
+        CS_CLASS_INDEXERROR, "index [%"PRIiPTR"] out of range",
+        cs_value_toint(OTHER)));
+      return 0;
+    }
+  }
+
+  cs_mutator_raise(mut, cs_mutator_easy_error(mut,
+    CS_CLASS_TYPEERROR, "invalid operands for Array.__get"));
+  return 0;
+}
+
+int cs_arrayclass_set(CsMutator* mut,
+  int argc, CsValue* args, int retc, CsValue* rets) {
+  if (cs_value_isint(OTHER)) {
+    if (cs_array_set(cs_value_toarray(SELF), cs_value_toint(OTHER), args[2])) {
+      return 1;
+    }
+    else {
+      cs_mutator_raise(mut, cs_mutator_easy_error(mut,
+        CS_CLASS_INDEXERROR, "index [%"PRIiPTR"] out of range",
+        cs_value_toint(OTHER)));
+      return 0;
+    }
+  }
+
+  cs_mutator_raise(mut, cs_mutator_easy_error(mut,
+    CS_CLASS_TYPEERROR, "invalid operands for Array.__set"));
+  return 0;
+}
+
 CsValue cs_initclass_array(CsMutator* mut) {
   CsHash* dict = cs_hash_new();
   CsArray* bases = cs_array_new();
@@ -80,6 +121,11 @@ CsValue cs_initclass_array(CsMutator* mut) {
 
   cs_hash_insert(dict, "__add", 5,
     cs_mutator_new_builtin(mut, cs_arrayclass_add));
+
+  cs_hash_insert(dict, "__get", 5,
+    cs_mutator_new_builtin(mut, cs_arrayclass_get));
+  cs_hash_insert(dict, "__set", 5,
+    cs_mutator_new_builtin(mut, cs_arrayclass_set));
 
   cs_array_insert(bases, -1, CS_CLASS_OBJECT);
   CS_CLASS_ARRAY = cs_mutator_new_class(mut, "Array", dict, bases);

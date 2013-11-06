@@ -20,7 +20,9 @@ void cs_array_free(CsArray* arr);
  * @param  data output location of data
  * @return      true if pos is valid, false if illegal access
  */
-bool cs_array_find(CsArray* arr, long pos, void* data);
+bool cs_array_find(CsArray* arr, long pos, void** data);
+
+bool cs_array_set(CsArray* arr, long pos, void* data);
 
 bool cs_array_insert(CsArray* arr, long pos, void* data);
 

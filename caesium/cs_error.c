@@ -5,6 +5,7 @@
 CsValue CS_CLASS_ERROR;
 CsValue CS_CLASS_NAMEERROR;
 CsValue CS_CLASS_TYPEERROR;
+CsValue CS_CLASS_INDEXERROR;
 
 static int error_as_string(CsMutator* mut,
   int argc, CsValue* args, int retc, CsValue* rets) {
@@ -69,6 +70,21 @@ CsValue cs_initclass_typeerror(CsMutator* mut) {
 }
 
 void cs_freeclass_typeerror(CsValue klass) {
+  cs_hash_free(klass->dict);
+  cs_array_free(klass->bases);
+}
+
+CsValue cs_initclass_indexerror(CsMutator* mut) {
+  CsHash* dict = cs_hash_new();
+  CsArray* bases = cs_array_new();
+
+  cs_array_insert(bases, -1, CS_CLASS_ERROR);
+  CS_CLASS_INDEXERROR =
+    cs_mutator_new_class(mut, "IndexError", dict, bases);
+  return CS_CLASS_INDEXERROR;
+}
+
+void cs_freeclass_indexerror(CsValue klass) {
   cs_hash_free(klass->dict);
   cs_array_free(klass->bases);
 }

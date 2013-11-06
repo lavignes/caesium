@@ -152,6 +152,13 @@ static void create_classes(CsRuntime* cs, CsMutator* mut) {
     CS_CLASS_TYPEERROR->classname,
     strlen(CS_CLASS_TYPEERROR->classname),
     CS_CLASS_TYPEERROR);
+
+  // create indexerror class
+  cs_initclass_indexerror(mut);
+  cs_hash_insert(cs->globals,
+    CS_CLASS_INDEXERROR->classname,
+    strlen(CS_CLASS_INDEXERROR->classname),
+    CS_CLASS_INDEXERROR);
 }
 
 static void cleanup_classes() {
@@ -165,6 +172,7 @@ static void cleanup_classes() {
   cs_freeclass_error(CS_CLASS_ERROR);
   cs_freeclass_nameerror(CS_CLASS_NAMEERROR);
   cs_freeclass_typeerror(CS_CLASS_TYPEERROR);
+  cs_freeclass_indexerror(CS_CLASS_INDEXERROR);
 }
 
 void cs_runtime_doassembly(CsRuntime* cs, const char* u8str, size_t size) {

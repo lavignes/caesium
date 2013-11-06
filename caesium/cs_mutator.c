@@ -326,6 +326,78 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
           pthread_mutex_unlock(&mut->cs->globals_lock);
           break;
 
+        case CS_OPCODE_LOADI:
+          a = cs_bytecode_get_a(code);
+          b = cs_bytecode_get_b(code);
+          c = cs_bytecode_get_c(code);
+          val[1] = closure->stacks[b];
+          val[2] = load_rk_value(c);
+          if (cs_value_isint(val[1]))
+            goto get_error;
+          switch (val[1]->type) {
+            case CS_VALUE_ARRAY:
+              cs_arrayclass_get(mut, 2, &val[1], 1, &closure->stacks[a]);
+              break;
+
+            case CS_VALUE_INSTANCE:
+              temp1 = cs_mutator_member_find(mut, val[1], "__get", 5);
+              if (temp1) {
+                if (temp1->type == CS_VALUE_BUILTIN)
+                  temp1->builtin(mut, 2, &val[1], 1, &closure->stacks[a]);
+                else {
+                  closure->stacks[a] = CS_NIL;
+                  cs_mutator_raise(mut, cs_mutator_easy_error(mut,
+                    CS_CLASS_TYPEERROR, "%s.__get is not callable",
+                    val[1]->klass->classname));
+                } 
+              }
+              else goto get_error;
+              break;
+
+            default:
+              get_error: closure->stacks[a] = CS_NIL;
+              cs_mutator_raise(mut, cs_mutator_easy_error(mut,
+                CS_CLASS_TYPEERROR, "invalid operands for Object.__get"));
+              break;
+          }
+          break;
+
+        case CS_OPCODE_STORI:
+          a = cs_bytecode_get_a(code);
+          b = cs_bytecode_get_b(code);
+          c = cs_bytecode_get_c(code);
+          val[0] = closure->stacks[b];
+          val[1] = load_rk_value(c);
+          val[2] = closure->stacks[a];
+          if (cs_value_isint(val[0]))
+            goto set_error;
+          switch (val[0]->type) {
+            case CS_VALUE_ARRAY:
+              cs_arrayclass_set(mut, 3, &val[0], 0, NULL);
+              break;
+
+            case CS_VALUE_INSTANCE:
+              temp1 = cs_mutator_member_find(mut, val[0], "__set", 5);
+              if (temp1) {
+                if (temp1->type == CS_VALUE_BUILTIN)
+                  temp1->builtin(mut, 3, &val[0], 0, NULL);
+                else {
+                  cs_mutator_raise(mut, cs_mutator_easy_error(mut,
+                    CS_CLASS_TYPEERROR, "%s.__set is not callable",
+                    val[0]->klass->classname));
+                }
+              }
+              else goto set_error;
+              break;
+
+            default:
+              set_error: closure->stacks[a] = CS_NIL;
+              cs_mutator_raise(mut, cs_mutator_easy_error(mut,
+                CS_CLASS_TYPEERROR, "invalid operands for Object.__set"));
+              break;
+          }
+          break;
+
         case CS_OPCODE_PUTS:
           a = cs_bytecode_get_a(code);
           // value_as_string can return NULL if an exception occurs
@@ -337,7 +409,8 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
         case CS_OPCODE_NEW:
           a = cs_bytecode_get_a(code);
           b = cs_bytecode_get_b(code);
-          if (closure->stacks[b]->type == CS_VALUE_CLASS) {
+          if (!cs_value_isint(closure->stacks[b])
+            && closure->stacks[b]->type == CS_VALUE_CLASS) {
             temp1 = cs_mutator_member_find(mut, closure->stacks[b], "__new", 5);
             if (temp1->type == CS_VALUE_BUILTIN)
               temp1->builtin(mut,
