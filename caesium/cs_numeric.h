@@ -51,6 +51,8 @@ int cs_real_pow(CsMutator* mut,
   int argc, CsValue* args, int retc, CsValue* rets);
 int cs_real_neg(CsMutator* mut,
   int argc, CsValue* args, int retc, CsValue* rets);
+int cs_real_lt(CsMutator* mut,
+  int argc, CsValue* args, int retc, CsValue* rets);
 
 CsValue cs_initclass_real(CsMutator* mut);
 void cs_freeclass_real(CsValue klass);

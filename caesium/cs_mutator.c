@@ -911,6 +911,10 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
             break;
           }
           switch (val[1]->type) {
+            case CS_VALUE_REAL:
+              cs_real_lt(mut, 2, &val[1], 1, &env->stacks[a]);
+              break;
+
             case CS_VALUE_INSTANCE:
               temp1 = cs_mutator_member_find(mut, val[1], "__lt", 4);
               if (temp1) {
@@ -968,6 +972,9 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
                 env->pc++;
                 temp_env = invoke(mut, env->stacks[a]->closure);
                 temp_env->parent = env;
+                // Load params into locals
+                //temp_env->stacks[a] = 
+
                 env = temp_env;
                 goto context_swtich_env;
               break;

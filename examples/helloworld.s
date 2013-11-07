@@ -1,13 +1,13 @@
-# x = new Integer
-#
-# while x < 200000:
-#   x = x + 1
-#   print x
+# print(print)
+# x = new Real
+# while x < 20000.0:
+#   x = x + 0.1
+#   print(x)
 .entry 0 0 3
   .const 'print'
-  .const 'Integer'
-  .const 1
-  .const 200000
+  .const 'Real'
+  .const 0.1
+  .const 20000.0
   loadg 0 0
   puts 0
   loadg 1 1

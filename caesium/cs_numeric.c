@@ -345,6 +345,31 @@ int cs_real_neg(CsMutator* mut,
   return 1;
 }
 
+int cs_real_lt(CsMutator* mut,
+  int argc, CsValue* args, int retc, CsValue* rets) {
+  if (cs_value_isint(OTHER)) {
+    if (cs_value_toreal(SELF) < (double) cs_value_toint(OTHER))
+      RET = CS_TRUE;
+    else
+      RET = CS_FALSE;
+    return 1;
+  }
+
+  switch (OTHER->type) {
+    case CS_VALUE_REAL:
+      if (cs_value_toreal(SELF) < cs_value_toreal(OTHER))
+        RET = CS_TRUE;
+      else
+        RET = CS_FALSE;
+      return 1;
+
+    default:
+      cs_mutator_raise(mut, cs_mutator_easy_error(mut, CS_CLASS_TYPEERROR, 
+        "invalid operands for Real.__lt"));
+      return 0;
+  }
+}
+
 CsValue cs_initclass_real(CsMutator* mut) {
   CsHash* dict = cs_hash_new();
   CsArray* bases = cs_array_new();
@@ -357,6 +382,8 @@ CsValue cs_initclass_real(CsMutator* mut) {
   cs_hash_insert(dict, "__div", 5, cs_mutator_new_builtin(mut, cs_real_div));
   cs_hash_insert(dict, "__pow", 5, cs_mutator_new_builtin(mut, cs_real_pow));
   cs_hash_insert(dict, "__neg", 5, cs_mutator_new_builtin(mut, cs_real_neg));
+
+  cs_hash_insert(dict, "__lt", 4, cs_mutator_new_builtin(mut, cs_real_lt));
 
   cs_array_insert(bases, -1, CS_CLASS_OBJECT);
   CS_CLASS_REAL = cs_mutator_new_class(mut, "Real", dict, bases);
