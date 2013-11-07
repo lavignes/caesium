@@ -175,6 +175,30 @@ int cs_int_not(CsMutator* mut,
   return 1;
 }
 
+int cs_int_lt(CsMutator* mut,
+  int argc, CsValue* args, int retc, CsValue* rets) {
+  if (cs_value_isint(OTHER)) {
+    if (cs_value_toint(SELF) < cs_value_toint(OTHER))
+      RET = CS_TRUE;
+    else
+      RET = CS_FALSE;
+    return 1;
+  }
+  switch (OTHER->type) {
+    case CS_VALUE_REAL:
+      if (((double) cs_value_toint(SELF)) < cs_value_toreal(OTHER))
+        RET = CS_TRUE;
+      else
+        RET = CS_FALSE;
+      return 1;
+      
+    default:
+      cs_mutator_raise(mut, cs_mutator_easy_error(mut,
+        CS_CLASS_TYPEERROR, "invalid operands for Integer.__lt"));
+      return 0;
+  }
+}
+
 CsValue cs_initclass_int(CsMutator* mut) {
   CsHash* dict = cs_hash_new();
   CsArray* bases = cs_array_new();
@@ -192,6 +216,7 @@ CsValue cs_initclass_int(CsMutator* mut) {
   cs_hash_insert(dict, "__or", 4, cs_mutator_new_builtin(mut, cs_int_or));
   cs_hash_insert(dict, "__xor", 5, cs_mutator_new_builtin(mut, cs_int_xor));
   cs_hash_insert(dict, "__not", 5, cs_mutator_new_builtin(mut, cs_int_not));
+  cs_hash_insert(dict, "__lt", 4, cs_mutator_new_builtin(mut, cs_int_lt));
 
   cs_array_insert(bases, -1, CS_CLASS_OBJECT);
   CS_CLASS_INT = cs_mutator_new_class(mut, "Integer", dict, bases);

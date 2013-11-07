@@ -31,6 +31,8 @@ int cs_int_xor(CsMutator* mut,
   int argc, CsValue* args, int retc, CsValue* rets);
 int cs_int_not(CsMutator* mut,
   int argc, CsValue* args, int retc, CsValue* rets);
+int cs_int_lt(CsMutator* mut,
+  int argc, CsValue* args, int retc, CsValue* rets);
 
 CsValue cs_initclass_int(CsMutator* mut);
 void cs_freeclass_int(CsValue klass);

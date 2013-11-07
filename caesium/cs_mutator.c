@@ -770,7 +770,7 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
           }
           switch (val[1]->type) {
             case CS_VALUE_INSTANCE:
-              temp1 = cs_mutator_member_find(mut, val[1], "__or", 5);
+              temp1 = cs_mutator_member_find(mut, val[1], "__or", 4);
               if (temp1) {
                 if (temp1->type == CS_VALUE_BUILTIN)
                   temp1->builtin(mut, 2, &val[1], 1, &env->stacks[a]);
@@ -895,6 +895,41 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
 
             default:
               // Everything else is true
+              break;
+          }
+          break;
+
+        case CS_OPCODE_LT:
+          a = cs_bytecode_get_a(code);
+          b = cs_bytecode_get_b(code);
+          c = cs_bytecode_get_c(code);
+          // Read the args as konst or value
+          val[1] = load_rk_value(b);
+          val[2] = load_rk_value(c);
+          if (cs_value_isint(val[1])) {
+            cs_int_lt(mut, 2, &val[1], 1, &env->stacks[a]);
+            break;
+          }
+          switch (val[1]->type) {
+            case CS_VALUE_INSTANCE:
+              temp1 = cs_mutator_member_find(mut, val[1], "__lt", 4);
+              if (temp1) {
+                if (temp1->type == CS_VALUE_BUILTIN)
+                  temp1->builtin(mut, 2, &val[1], 1, &env->stacks[a]);
+                else {
+                  env->stacks[a] = CS_NIL;
+                  cs_mutator_raise(mut, cs_mutator_easy_error(mut,
+                    CS_CLASS_TYPEERROR, "%s.__lt is not callable",
+                    val[1]->klass->classname));
+                } 
+              }
+              else goto lt_error;
+              break;
+
+            default:
+              lt_error: env->stacks[a] = CS_NIL;
+              cs_mutator_raise(mut, cs_mutator_easy_error(mut,
+                CS_CLASS_TYPEERROR, "invalid operands for Object.__lt"));
               break;
           }
           break;
