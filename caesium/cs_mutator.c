@@ -244,6 +244,8 @@ static CsInvocation* invoke(CsMutator* mut, CsClosure* closure) {
   env->codes = (uintptr_t*) closure->cur_func->codes->buckets;
   env->parent = NULL;
   env->stacks = ((void*) env) + sizeof(CsInvocation);
+  env->returnloc = 0;
+  env->retc = 0;
   return env;
 } 
 
@@ -969,12 +971,15 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
               break;
 
               case CS_VALUE_CLOSURE:
-                env->pc++;
+                env->pc++; // Set the return pc up by 1
                 temp_env = invoke(mut, env->stacks[a]->closure);
                 temp_env->parent = env;
+                temp_env->returnloc = a;
+                temp_env->retc = c-1;
                 // Load params into locals
-                //temp_env->stacks[a] = 
-
+                memcpy(&temp_env->stacks[a],
+                  &env->stacks[a+1], b * sizeof(CsValue)); 
+                // Swap contexts
                 env = temp_env;
                 goto context_swtich_env;
               break;
@@ -992,6 +997,13 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
           break;
 
         case CS_OPCODE_RET:
+          a = cs_bytecode_get_a(code);
+          b = cs_bytecode_get_b(code); // retc = b-1
+          if (env->retc > 0) {
+            // copy back return values
+            memcpy(&env->parent->stacks[env->returnloc],
+              &env->stacks[a], sizeof(CsValue) * min(b-1, env->retc));
+          }
           goto ret_exec; // Return
           break;
 
@@ -1020,7 +1032,8 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
     }
 
     // Yield to calling function
-    ret_exec: temp_env = env;
+    ret_exec:
+    temp_env = env;
     env = env->parent;
     cs_free_object(temp_env);
   }

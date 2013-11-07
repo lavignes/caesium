@@ -18,6 +18,11 @@
  * Core macros for useful things
  */
 
+#ifndef max
+#define max(a,b) (((a) (b)) ? (a) : (b))
+#define min(a,b) (((a) < (b)) ? (a) : (b))
+#endif
+
 /*
  * Call return if a case is true
  */

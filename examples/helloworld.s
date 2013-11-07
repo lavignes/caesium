@@ -1,22 +1,17 @@
-# print(print)
-# x = new Real
-# while x < 20000.0:
-#   x = x + 0.1
-#   print(x)
-.entry 0 0 3
-  .const 'print'
-  .const 'Real'
-  .const 0.1
-  .const 20000.0
-  loadg 0 0
+.entry 0 0 2
+  .func 0 0 2
+    .const 'Object'
+    .const 'TypeError'
+    loadg 0 0
+    loadg 1 1
+    ret 0 3
+  .end
+  
+  clos 0 0
+  call 0 0 3
   puts 0
-  loadg 1 1
-  new 1 1
-  lt 2 1 259
-  if 2 4
-  add 1 1 258
-  call 0 1 1
-  jmp -4
+  puts 1
+
   .resq
     catch 0
     puts 0

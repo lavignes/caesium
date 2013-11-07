@@ -39,6 +39,8 @@ typedef struct CsInvocation {
   size_t ncodes;
   uintptr_t* codes;
   struct CsInvocation* parent;
+  int returnloc; // Location of return values
+  int retc; // Number of expected return values
   CsValue* stacks;
 } CsInvocation;
 
