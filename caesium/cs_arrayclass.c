@@ -7,9 +7,6 @@ CsValue CS_CLASS_ARRAY;
 static int __new(CsMutator* mut,
   int argc, CsValue* args, int retc, CsValue* rets) {
   CsArray* array = cs_array_new();
-  cs_array_insert(array, -1, cs_value_fromint(1));
-  cs_array_insert(array, -1, cs_value_fromint(2));
-  cs_array_insert(array, -1, cs_value_fromint(3));
   RET = cs_mutator_new_array(mut, array);
   return 1;
 }
@@ -31,11 +28,16 @@ int cs_arrayclass_as_string(CsMutator* mut,
       value = cs_mutator_new_string_formatted(mut, "%s'%s', ",
         cs_value_tostring(value), cs_value_tostring(element));
     else {
-      element = cs_mutator_value_as_string(mut, element);
-      if (element == NULL)
-        return 0;
-      value = cs_mutator_new_string_formatted(mut, "%s%s, ",
-        cs_value_tostring(value), cs_value_tostring(element));
+      if (element == SELF)
+        value = cs_mutator_new_string_formatted(mut, "%s[...], ",
+          cs_value_tostring(value));
+      else {
+        element = cs_mutator_value_as_string(mut, element);
+        if (element == NULL)
+          return 0;
+        value = cs_mutator_new_string_formatted(mut, "%s%s, ",
+          cs_value_tostring(value), cs_value_tostring(element));
+      }
     }
   }
   element = cs_value_toarray(SELF)->buckets[i];
@@ -43,11 +45,16 @@ int cs_arrayclass_as_string(CsMutator* mut,
     value = cs_mutator_new_string_formatted(mut, "%s'%s']",
       cs_value_tostring(value), cs_value_tostring(element));
   else {
-    element = cs_mutator_value_as_string(mut, element);
-    if (element == NULL)
-      return 0;
-    value = cs_mutator_new_string_formatted(mut, "%s%s]",
-      cs_value_tostring(value), cs_value_tostring(element));
+    if (element == SELF)
+      value = cs_mutator_new_string_formatted(mut, "%s[...]]",
+        cs_value_tostring(value));
+    else {
+      element = cs_mutator_value_as_string(mut, element);
+      if (element == NULL)
+        return 0;
+      value = cs_mutator_new_string_formatted(mut, "%s%s]",
+        cs_value_tostring(value), cs_value_tostring(element));
+    }
   }
   RET = value;
   return 1;
@@ -86,6 +93,19 @@ int cs_arrayclass_get(CsMutator* mut,
         cs_value_toint(OTHER)));
       return 0;
     }
+  } else if (OTHER->type == CS_VALUE_STRING) {
+    RET = cs_mutator_member_find(mut, CS_CLASS_ARRAY,
+      cs_value_tostring(OTHER),
+      OTHER->string->size);
+    if (RET) {
+      return 1;
+    } else {
+      RET = CS_NIL;
+      cs_mutator_raise(mut, cs_mutator_easy_error(mut,
+        CS_CLASS_NAMEERROR, "Array has no attribute '%s'",
+          cs_value_tostring(OTHER)));
+      return 0;
+    }
   }
 
   cs_mutator_raise(mut, cs_mutator_easy_error(mut,
@@ -112,6 +132,32 @@ int cs_arrayclass_set(CsMutator* mut,
   return 0;
 }
 
+int cs_arrayclass_push_back(CsMutator* mut,
+  int argc, CsValue* args, int retc, CsValue* rets) {
+  cs_array_insert(cs_value_toarray(SELF), -1, OTHER);
+  RET = SELF;
+  return 1;
+}
+
+int cs_arrayclass_insert(CsMutator* mut,
+  int argc, CsValue* args, int retc, CsValue* rets) {
+  if (cs_value_isint(OTHER)) {
+    if (cs_array_insert(cs_value_toarray(SELF), cs_value_toint(OTHER), args[2])) {
+      RET = SELF;
+      return 1;
+    }
+    else {
+      cs_mutator_raise(mut, cs_mutator_easy_error(mut,
+        CS_CLASS_INDEXERROR, "index [%"PRIiPTR"] out of range",
+        cs_value_toint(OTHER)));
+      return 0;
+    }
+  }
+  cs_mutator_raise(mut, cs_mutator_easy_error(mut,
+    CS_CLASS_TYPEERROR, "invalid operands for Array.insert"));
+  return 0;
+}
+
 CsValue cs_initclass_array(CsMutator* mut) {
   CsHash* dict = cs_hash_new();
   CsArray* bases = cs_array_new();
@@ -128,6 +174,11 @@ CsValue cs_initclass_array(CsMutator* mut) {
     cs_mutator_new_builtin(mut, cs_arrayclass_get));
   cs_hash_insert(dict, "__set", 5,
     cs_mutator_new_builtin(mut, cs_arrayclass_set));
+
+  cs_hash_insert(dict, "push_back", 9,
+    cs_mutator_new_builtin(mut, cs_arrayclass_push_back));
+  cs_hash_insert(dict, "insert", 6,
+    cs_mutator_new_builtin(mut, cs_arrayclass_insert));
 
   cs_array_insert(bases, -1, CS_CLASS_OBJECT);
   CS_CLASS_ARRAY = cs_mutator_new_class(mut, "Array", dict, bases);

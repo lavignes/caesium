@@ -357,17 +357,14 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
 
             case CS_VALUE_INSTANCE:
               temp1 = cs_mutator_member_find(mut, val[1], "__get", 5);
-              if (temp1) {
-                if (temp1->type == CS_VALUE_BUILTIN)
-                  temp1->builtin(mut, 2, &val[1], 1, &env->stacks[a]);
-                else {
-                  env->stacks[a] = CS_NIL;
-                  cs_mutator_raise(mut, cs_mutator_easy_error(mut,
-                    CS_CLASS_TYPEERROR, "%s.__get is not callable",
-                    val[1]->klass->classname));
-                } 
-              }
-              else goto get_error;
+              if (temp1->type == CS_VALUE_BUILTIN)
+                temp1->builtin(mut, 2, &val[1], 1, &env->stacks[a]);
+              else {
+                env->stacks[a] = CS_NIL;
+                cs_mutator_raise(mut, cs_mutator_easy_error(mut,
+                  CS_CLASS_TYPEERROR, "%s.__get is not callable",
+                  val[1]->klass->classname));
+              } 
               break;
 
             default:
@@ -394,16 +391,13 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
 
             case CS_VALUE_INSTANCE:
               temp1 = cs_mutator_member_find(mut, val[0], "__set", 5);
-              if (temp1) {
-                if (temp1->type == CS_VALUE_BUILTIN)
-                  temp1->builtin(mut, 3, &val[0], 0, NULL);
-                else {
-                  cs_mutator_raise(mut, cs_mutator_easy_error(mut,
-                    CS_CLASS_TYPEERROR, "%s.__set is not callable",
-                    val[0]->klass->classname));
-                }
+              if (temp1->type == CS_VALUE_BUILTIN)
+                temp1->builtin(mut, 3, &val[0], 0, NULL);
+              else {
+                cs_mutator_raise(mut, cs_mutator_easy_error(mut,
+                  CS_CLASS_TYPEERROR, "%s.__set is not callable",
+                  val[0]->klass->classname));
               }
-              else goto set_error;
               break;
 
             default:

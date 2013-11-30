@@ -171,7 +171,7 @@ int cs_int_xor(CsMutator* mut,
 
 int cs_int_not(CsMutator* mut,
   int argc, CsValue* args, int retc, CsValue* rets) {
-  RET = cs_value_fromint(cs_value_toint(SELF) ^ cs_value_toint(OTHER));
+  RET = cs_value_fromint(~cs_value_toint(SELF));
   return 1;
 }
 
