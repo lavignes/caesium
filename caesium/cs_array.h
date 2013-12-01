@@ -28,7 +28,7 @@ bool cs_array_insert(CsArray* arr, long pos, void* data);
 
 CsArray* cs_array_copy(CsArray* arr);
 
-bool cs_array_remove(CsArray* arr, long pos, void* data);
+bool cs_array_remove(CsArray* arr, long pos, void** data);
 
 void cs_array_traverse(CsArray* arr, bool (*fn)(void*, void*), void* data);
 

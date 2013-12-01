@@ -139,6 +139,34 @@ int cs_arrayclass_push_back(CsMutator* mut,
   return 1;
 }
 
+int cs_arrayclass_push_front(CsMutator* mut,
+  int argc, CsValue* args, int retc, CsValue* rets) {
+  cs_array_insert(cs_value_toarray(SELF), 0, OTHER);
+  RET = SELF;
+  return 1;
+}
+
+int cs_arrayclass_pop_back(CsMutator* mut,
+  int argc, CsValue* args, int retc, CsValue* rets) {
+  if (cs_array_remove(cs_value_toarray(SELF), -1, (void**) &RET)) {
+    return 1;
+  }
+  cs_mutator_raise(mut, cs_mutator_easy_error(mut,
+    CS_CLASS_INDEXERROR, "cannot pop empty array"));
+  return 0;
+}
+
+int cs_arrayclass_pop_front(CsMutator* mut,
+  int argc, CsValue* args, int retc, CsValue* rets) {
+  if (cs_array_remove(cs_value_toarray(SELF), 0, (void**) &RET)) {
+    return 1;
+  }
+  cs_mutator_raise(mut, cs_mutator_easy_error(mut,
+    CS_CLASS_INDEXERROR, "cannot pop empty array"));
+  return 0;
+}
+
+
 int cs_arrayclass_insert(CsMutator* mut,
   int argc, CsValue* args, int retc, CsValue* rets) {
   if (cs_value_isint(OTHER)) {
@@ -155,6 +183,24 @@ int cs_arrayclass_insert(CsMutator* mut,
   }
   cs_mutator_raise(mut, cs_mutator_easy_error(mut,
     CS_CLASS_TYPEERROR, "invalid operands for Array.insert"));
+  return 0;
+}
+
+int cs_arrayclass_remove(CsMutator* mut,
+  int argc, CsValue* args, int retc, CsValue* rets) {
+  if (cs_value_isint(OTHER)) {
+    if (cs_array_remove(cs_value_toarray(SELF), cs_value_toint(OTHER), (void**) &RET)) {
+      return 1;
+    }
+    else {
+      cs_mutator_raise(mut, cs_mutator_easy_error(mut,
+        CS_CLASS_INDEXERROR, "index [%"PRIiPTR"] out of range",
+        cs_value_toint(OTHER)));
+      return 0;
+    }
+  }
+  cs_mutator_raise(mut, cs_mutator_easy_error(mut,
+    CS_CLASS_TYPEERROR, "invalid operands for Array.remove"));
   return 0;
 }
 
@@ -177,8 +223,16 @@ CsValue cs_initclass_array(CsMutator* mut) {
 
   cs_hash_insert(dict, "push_back", 9,
     cs_mutator_new_builtin(mut, cs_arrayclass_push_back));
+  cs_hash_insert(dict, "push_front", 10,
+    cs_mutator_new_builtin(mut, cs_arrayclass_push_front));
+  cs_hash_insert(dict, "pop_back", 8,
+    cs_mutator_new_builtin(mut, cs_arrayclass_pop_back));
+  cs_hash_insert(dict, "pop_front", 9,
+    cs_mutator_new_builtin(mut, cs_arrayclass_pop_front));
   cs_hash_insert(dict, "insert", 6,
     cs_mutator_new_builtin(mut, cs_arrayclass_insert));
+  cs_hash_insert(dict, "remove", 6,
+    cs_mutator_new_builtin(mut, cs_arrayclass_remove));
 
   cs_array_insert(bases, -1, CS_CLASS_OBJECT);
   CS_CLASS_ARRAY = cs_mutator_new_class(mut, "Array", dict, bases);
