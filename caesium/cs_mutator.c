@@ -292,7 +292,7 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
   CsInvocation* env = invoke(mut, closure);
 
   while (cs_likely(env)) {
-    context_swtich_env:
+    context_switch_env:
     for (; env->pc < env->ncodes; env->pc++) {
       CsByteCode code = env->codes[env->pc];
       switch (cs_bytecode_get_opcode(code)) {
@@ -975,7 +975,7 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
                   &env->stacks[a+1], b * sizeof(CsValue)); 
                 // Swap contexts
                 env = temp_env;
-                goto context_swtich_env;
+                goto context_switch_env;
               break;
 
               default:
