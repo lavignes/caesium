@@ -40,7 +40,9 @@ int __get(CsMutator* mut,
 static int __set(CsMutator* mut,
   int argc, CsValue* args, int retc, CsValue* rets) {
   if (!cs_value_isint(OTHER) && OTHER->type == CS_VALUE_STRING) {
-    cs_hash_insert(SELF->dict, "what", 4, args[2]);
+    cs_hash_insert(SELF->dict,
+      cs_value_toutf8(OTHER),
+      cs_value_tostring(OTHER)->size, args[2]);
     return 1;
   }
   cs_mutator_raise(mut, cs_mutator_easy_error(mut,
