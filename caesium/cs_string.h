@@ -12,6 +12,9 @@ int cs_string_add(CsMutator* mut,
 int cs_string_mul(CsMutator* mut,
   int argc, CsValue* args, int retc, CsValue* rets);
 
+int cs_string_get(CsMutator* mut,
+  int argc, CsValue* args, int retc, CsValue* rets);
+
 CsValue cs_initclass_string(CsMutator* mut);
 void cs_freeclass_string(CsValue klass);
 

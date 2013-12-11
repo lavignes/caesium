@@ -30,7 +30,7 @@ void cs_freeclass_true(CsValue klass) {
 static int __false(CsMutator* mut,
   int argc, CsValue* args, int retc, CsValue* rets) {
   if (retc)
-    RET = CS_TRUE;
+    RET = CS_FALSE;
   return 1;
 }
 

@@ -8,7 +8,7 @@ typedef enum CsOpcode {
   CS_OPCODE_LOADK,   // loadk A B   -> R[A] = K[B]
   CS_OPCODE_LOADG,   // loadg A B   -> R[A] = G[K[B]]
   CS_OPCODE_STORG,   // storg A B   -> G[K[B]] = R[A]
-  CS_OPCODE_LOADI,   // loadi A B C -> R[A] = R[B][RK[C]]
+  CS_OPCODE_LOADI,   // loadi A B C -> R[A] = RK[B][RK[C]]
   CS_OPCODE_STORI,   // stori A B C -> R[B][RK[C]] = R[A]
   CS_OPCODE_LODUP,   // lodup A B   -> R[A] = UP[B]
   CS_OPCODE_STRUP,   // strup A B   -> UP[B] = R[A]

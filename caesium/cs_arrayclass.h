@@ -21,7 +21,19 @@ int cs_arrayclass_set(CsMutator* mut,
 int cs_arrayclass_push_back(CsMutator* mut,
   int argc, CsValue* args, int retc, CsValue* rets);
 
+int cs_arrayclass_push_front(CsMutator* mut,
+  int argc, CsValue* args, int retc, CsValue* rets);
+
+int cs_arrayclass_pop_back(CsMutator* mut,
+  int argc, CsValue* args, int retc, CsValue* rets);
+
+int cs_arrayclass_pop_front(CsMutator* mut,
+  int argc, CsValue* args, int retc, CsValue* rets);
+
 int cs_arrayclass_insert(CsMutator* mut,
+  int argc, CsValue* args, int retc, CsValue* rets);
+
+int cs_arrayclass_remove(CsMutator* mut,
   int argc, CsValue* args, int retc, CsValue* rets);
 
 CsValue cs_initclass_array(CsMutator* mut);

@@ -26,34 +26,34 @@ int cs_arrayclass_as_string(CsMutator* mut,
     element = cs_value_toarray(SELF)->buckets[i];
     if (!cs_value_isint(element) && element->type == CS_VALUE_STRING)
       value = cs_mutator_new_string_formatted(mut, "%s'%s', ",
-        cs_value_tostring(value), cs_value_tostring(element));
+        cs_value_toutf8(value), cs_value_toutf8(element));
     else {
       if (element == SELF)
         value = cs_mutator_new_string_formatted(mut, "%s[...], ",
-          cs_value_tostring(value));
+          cs_value_toutf8(value));
       else {
         element = cs_mutator_value_as_string(mut, element);
         if (element == NULL)
           return 0;
         value = cs_mutator_new_string_formatted(mut, "%s%s, ",
-          cs_value_tostring(value), cs_value_tostring(element));
+          cs_value_toutf8(value), cs_value_toutf8(element));
       }
     }
   }
   element = cs_value_toarray(SELF)->buckets[i];
   if (!cs_value_isint(element) && element->type == CS_VALUE_STRING)
     value = cs_mutator_new_string_formatted(mut, "%s'%s']",
-      cs_value_tostring(value), cs_value_tostring(element));
+      cs_value_toutf8(value), cs_value_toutf8(element));
   else {
     if (element == SELF)
       value = cs_mutator_new_string_formatted(mut, "%s[...]]",
-        cs_value_tostring(value));
+        cs_value_toutf8(value));
     else {
       element = cs_mutator_value_as_string(mut, element);
       if (element == NULL)
         return 0;
       value = cs_mutator_new_string_formatted(mut, "%s%s]",
-        cs_value_tostring(value), cs_value_tostring(element));
+        cs_value_toutf8(value), cs_value_toutf8(element));
     }
   }
   RET = value;
@@ -95,7 +95,7 @@ int cs_arrayclass_get(CsMutator* mut,
     }
   } else if (OTHER->type == CS_VALUE_STRING) {
     RET = cs_mutator_member_find(mut, CS_CLASS_ARRAY,
-      cs_value_tostring(OTHER),
+      cs_value_toutf8(OTHER),
       OTHER->string->size);
     if (RET) {
       return 1;
@@ -103,7 +103,7 @@ int cs_arrayclass_get(CsMutator* mut,
       RET = CS_NIL;
       cs_mutator_raise(mut, cs_mutator_easy_error(mut,
         CS_CLASS_NAMEERROR, "Array has no attribute '%s'",
-          cs_value_tostring(OTHER)));
+          cs_value_toutf8(OTHER)));
       return 0;
     }
   }
@@ -139,6 +139,34 @@ int cs_arrayclass_push_back(CsMutator* mut,
   return 1;
 }
 
+int cs_arrayclass_push_front(CsMutator* mut,
+  int argc, CsValue* args, int retc, CsValue* rets) {
+  cs_array_insert(cs_value_toarray(SELF), 0, OTHER);
+  RET = SELF;
+  return 1;
+}
+
+int cs_arrayclass_pop_back(CsMutator* mut,
+  int argc, CsValue* args, int retc, CsValue* rets) {
+  if (cs_array_remove(cs_value_toarray(SELF), -1, (void**) &RET)) {
+    return 1;
+  }
+  cs_mutator_raise(mut, cs_mutator_easy_error(mut,
+    CS_CLASS_INDEXERROR, "cannot pop empty array"));
+  return 0;
+}
+
+int cs_arrayclass_pop_front(CsMutator* mut,
+  int argc, CsValue* args, int retc, CsValue* rets) {
+  if (cs_array_remove(cs_value_toarray(SELF), 0, (void**) &RET)) {
+    return 1;
+  }
+  cs_mutator_raise(mut, cs_mutator_easy_error(mut,
+    CS_CLASS_INDEXERROR, "cannot pop empty array"));
+  return 0;
+}
+
+
 int cs_arrayclass_insert(CsMutator* mut,
   int argc, CsValue* args, int retc, CsValue* rets) {
   if (cs_value_isint(OTHER)) {
@@ -158,11 +186,10 @@ int cs_arrayclass_insert(CsMutator* mut,
   return 0;
 }
 
-static int cs_arrayclass_remove(CsMutator* mut,
+int cs_arrayclass_remove(CsMutator* mut,
   int argc, CsValue* args, int retc, CsValue* rets) {
   if (cs_value_isint(OTHER)) {
     if (cs_array_remove(cs_value_toarray(SELF), cs_value_toint(OTHER), (void**) &RET)) {
-      RET = SELF;
       return 1;
     }
     else {
@@ -202,6 +229,12 @@ CsValue cs_initclass_array(CsMutator* mut) {
 
   cs_hash_insert(dict, "push_back", 9,
     cs_mutator_new_builtin(mut, cs_arrayclass_push_back));
+  cs_hash_insert(dict, "push_front", 10,
+    cs_mutator_new_builtin(mut, cs_arrayclass_push_front));
+  cs_hash_insert(dict, "pop_back", 8,
+    cs_mutator_new_builtin(mut, cs_arrayclass_pop_back));
+  cs_hash_insert(dict, "pop_front", 9,
+    cs_mutator_new_builtin(mut, cs_arrayclass_pop_front));
   cs_hash_insert(dict, "insert", 6,
     cs_mutator_new_builtin(mut, cs_arrayclass_insert));
   cs_hash_insert(dict, "remove", 6,

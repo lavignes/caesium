@@ -240,6 +240,7 @@ static CsInvocation* invoke(CsMutator* mut, CsClosure* closure) {
     (closure->cur_func->nstacks + closure->cur_func->nparams));
   env->closure = closure;
   env->pc = 0;
+  env->rescue = false;
   env->ncodes = closure->cur_func->codes->length;
   env->codes = (uintptr_t*) closure->cur_func->codes->buckets;
   env->parent = NULL;
@@ -292,7 +293,7 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
   CsInvocation* env = invoke(mut, closure);
 
   while (cs_likely(env)) {
-    context_swtich_env:
+    context_switch_env:
     for (; env->pc < env->ncodes; env->pc++) {
       CsByteCode code = env->codes[env->pc];
       switch (cs_bytecode_get_opcode(code)) {
@@ -346,13 +347,17 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
           a = cs_bytecode_get_a(code);
           b = cs_bytecode_get_b(code);
           c = cs_bytecode_get_c(code);
-          val[1] = env->stacks[b];
+          val[1] = load_rk_value(b);
           val[2] = load_rk_value(c);
           if (cs_value_isint(val[1]))
             goto get_error;
           switch (val[1]->type) {
             case CS_VALUE_ARRAY:
               cs_arrayclass_get(mut, 2, &val[1], 1, &env->stacks[a]);
+              break;
+
+            case CS_VALUE_STRING:
+              cs_string_get(mut, 2, &val[1], 1, &env->stacks[a]);
               break;
 
             case CS_VALUE_INSTANCE:
@@ -391,9 +396,9 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
 
             case CS_VALUE_INSTANCE:
               temp1 = cs_mutator_member_find(mut, val[0], "__set", 5);
-              if (temp1->type == CS_VALUE_BUILTIN)
+              if (temp1->type == CS_VALUE_BUILTIN) {
                 temp1->builtin(mut, 3, &val[0], 0, NULL);
-              else {
+              } else {
                 cs_mutator_raise(mut, cs_mutator_easy_error(mut,
                   CS_CLASS_TYPEERROR, "%s.__set is not callable",
                   val[0]->klass->classname));
@@ -413,7 +418,7 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
           // value_as_string can return NULL if an exception occurs
           temp1 = cs_mutator_value_as_string(mut, env->stacks[a]);
           if (cs_likely(temp1 != NULL))
-            printf("%s\n", cs_value_tostring(temp1));
+            printf("%s\n", cs_value_toutf8(temp1));
           break;
 
         case CS_OPCODE_NEW:
@@ -949,6 +954,7 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
         case CS_OPCODE_CATCH:
           a = cs_bytecode_get_a(code);
           env->stacks[a] = mut->error_register;
+          mut->error = false;
           mut->error_register = CS_NIL;
           break;
 
@@ -975,7 +981,7 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
                   &env->stacks[a+1], b * sizeof(CsValue)); 
                 // Swap contexts
                 env = temp_env;
-                goto context_swtich_env;
+                goto context_switch_env;
               break;
 
               default:
@@ -1008,12 +1014,23 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
       // Error was raised
       if (cs_unlikely(mut->error)) {
         // redirect to exception handler
-        if (env->closure->cur_func->resq) {
+        exception_caught:
+        if (env->rescue == false && env->closure->cur_func->resq) {
+          env->rescue = true;
           mut->error = false;
           env->pc = -1; // This is needed
           env->ncodes = env->closure->cur_func->resq->length;
           env->codes =
             (uintptr_t*) env->closure->cur_func->resq->buckets;
+        } else {
+          // Yield to calling function
+          temp_env = env;
+          env = env->parent;
+          cs_free_object(temp_env);
+          if (env)
+            goto exception_caught;
+          else 
+            return NULL;
         }
       }
 
