@@ -39,8 +39,13 @@ int __get(CsMutator* mut,
 }
 static int __set(CsMutator* mut,
   int argc, CsValue* args, int retc, CsValue* rets) {
-  
-  return 1;
+  if (!cs_value_isint(OTHER) && OTHER->type == CS_VALUE_STRING) {
+    cs_hash_insert(SELF->dict, "what", 4, args[2]);
+    return 1;
+  }
+  cs_mutator_raise(mut, cs_mutator_easy_error(mut,
+    CS_CLASS_TYPEERROR, "invalid operands for Object.__set"));
+  return 0;
 }
 
 CsValue cs_initclass_object(CsMutator* mut) {

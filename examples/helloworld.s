@@ -4,7 +4,12 @@
     add 0 0 1
     ret 0 2
     .resq
+      .const 'From add function: '
+      .const 'what'
       catch 0
+      loadi 1 0 257
+      add 1 256 1
+      stori 1 0 257
       raise 0
     .end
   .end

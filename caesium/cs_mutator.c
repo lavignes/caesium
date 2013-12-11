@@ -396,9 +396,9 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
 
             case CS_VALUE_INSTANCE:
               temp1 = cs_mutator_member_find(mut, val[0], "__set", 5);
-              if (temp1->type == CS_VALUE_BUILTIN)
+              if (temp1->type == CS_VALUE_BUILTIN) {
                 temp1->builtin(mut, 3, &val[0], 0, NULL);
-              else {
+              } else {
                 cs_mutator_raise(mut, cs_mutator_easy_error(mut,
                   CS_CLASS_TYPEERROR, "%s.__set is not callable",
                   val[0]->klass->classname));
