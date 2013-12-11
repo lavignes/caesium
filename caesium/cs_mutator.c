@@ -346,13 +346,17 @@ void* cs_mutator_exec(CsMutator* mut, CsByteChunk* chunk) {
           a = cs_bytecode_get_a(code);
           b = cs_bytecode_get_b(code);
           c = cs_bytecode_get_c(code);
-          val[1] = env->stacks[b];
+          val[1] = load_rk_value(b);
           val[2] = load_rk_value(c);
           if (cs_value_isint(val[1]))
             goto get_error;
           switch (val[1]->type) {
             case CS_VALUE_ARRAY:
               cs_arrayclass_get(mut, 2, &val[1], 1, &env->stacks[a]);
+              break;
+
+            case CS_VALUE_STRING:
+              cs_string_get(mut, 2, &val[1], 1, &env->stacks[a]);
               break;
 
             case CS_VALUE_INSTANCE:
