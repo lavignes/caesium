@@ -20,7 +20,7 @@ int __get(CsMutator* mut,
   CsValue value;
   if (!cs_value_isint(OTHER) && OTHER->type == CS_VALUE_STRING) {
     value = cs_mutator_member_find(mut, SELF,
-      cs_value_tostring(OTHER), OTHER->string->size);
+      cs_value_toutf8(OTHER), OTHER->string->size);
     if (value) {
       RET = value;
       return 1;
@@ -28,7 +28,7 @@ int __get(CsMutator* mut,
     else {
       cs_mutator_raise(mut, cs_mutator_easy_error(mut,
         CS_CLASS_INDEXERROR, "index '%s' out of range",
-        cs_value_tostring(OTHER)));
+        cs_value_toutf8(OTHER)));
       return 0;
     }
   }

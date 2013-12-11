@@ -38,6 +38,7 @@ typedef struct CsInvocation {
   size_t pc;
   size_t ncodes;
   uintptr_t* codes;
+  bool rescue; // true while handling an exception
   struct CsInvocation* parent;
   int returnloc; // Location of return values
   int retc; // Number of expected return values

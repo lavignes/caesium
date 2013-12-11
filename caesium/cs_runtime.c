@@ -88,7 +88,7 @@ static int print(CsMutator* mut,
   CsValue value;
   for (i = 0; i < argc; i++) {
     value = cs_mutator_value_as_string(mut, args[i]);
-    printf("%s\n", cs_value_tostring(value));
+    printf("%s\n", cs_value_toutf8(value));
   }
   return 1;
 }

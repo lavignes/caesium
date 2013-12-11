@@ -83,7 +83,8 @@ extern CsValue CS_EPSILON; // The empty string
 #define cs_value_fromint(i) ((CsValue) ((((intptr_t) i) << 0x1) | 0x1))
 
 #define cs_value_toreal(value) (value->real)
-#define cs_value_tostring(value) (value->string->u8str)
+#define cs_value_toutf8(value) (value->string->u8str)
+#define cs_value_tostring(value) (value->string)
 #define cs_value_toarray(value) (value->array)
 
 // Returns the address of a page given a value :)

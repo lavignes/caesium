@@ -23,7 +23,7 @@ static int error_as_string(CsMutator* mut,
   if (cs_unlikely(str == NULL))
     return 0;
   RET = cs_mutator_new_string_formatted(mut,
-    "%s: %s", SELF->klass->classname, cs_value_tostring(str));
+    "%s: %s", SELF->klass->classname, cs_value_toutf8(str));
   return 1;
 }
 
