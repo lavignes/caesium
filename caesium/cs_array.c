@@ -74,10 +74,10 @@ CsArray* cs_array_copy(CsArray* arr) {
   return cpy;
 }
 
-bool cs_array_remove(CsArray* arr, long pos, void* data) {
+bool cs_array_remove(CsArray* arr, long pos, void** data) {
   long i = (pos < 0)? ((long) arr->length) + pos + 1: pos;
   cs_return_if(i > (long) arr->length || i < 0, false);
-  data = arr->buckets[i];
+  *data = arr->buckets[i];
   memmove(
     arr->buckets + i,
     arr->buckets + i + 1,

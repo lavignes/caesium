@@ -158,6 +158,31 @@ int cs_arrayclass_insert(CsMutator* mut,
   return 0;
 }
 
+static int cs_arrayclass_remove(CsMutator* mut,
+  int argc, CsValue* args, int retc, CsValue* rets) {
+  if (cs_value_isint(OTHER)) {
+    if (cs_array_remove(cs_value_toarray(SELF), cs_value_toint(OTHER), (void**) &RET)) {
+      RET = SELF;
+      return 1;
+    }
+    else {
+      cs_mutator_raise(mut, cs_mutator_easy_error(mut,
+        CS_CLASS_INDEXERROR, "index [%"PRIiPTR"] out of range",
+        cs_value_toint(OTHER)));
+      return 0;
+    }
+  }
+  cs_mutator_raise(mut, cs_mutator_easy_error(mut,
+    CS_CLASS_TYPEERROR, "invalid operands for Array.remove"));
+  return 0;
+}
+
+int cs_arrayclass_length(CsMutator* mut,
+  int argc, CsValue* args, int retc, CsValue* rets) {
+  RET = cs_value_fromint((long) cs_value_toarray(SELF)->length);
+  return 1;
+}
+
 CsValue cs_initclass_array(CsMutator* mut) {
   CsHash* dict = cs_hash_new();
   CsArray* bases = cs_array_new();
@@ -179,6 +204,10 @@ CsValue cs_initclass_array(CsMutator* mut) {
     cs_mutator_new_builtin(mut, cs_arrayclass_push_back));
   cs_hash_insert(dict, "insert", 6,
     cs_mutator_new_builtin(mut, cs_arrayclass_insert));
+  cs_hash_insert(dict, "remove", 6,
+    cs_mutator_new_builtin(mut, cs_arrayclass_remove));
+  cs_hash_insert(dict, "length", 6,
+    cs_mutator_new_builtin(mut, cs_arrayclass_length));
 
   cs_array_insert(bases, -1, CS_CLASS_OBJECT);
   CS_CLASS_ARRAY = cs_mutator_new_class(mut, "Array", dict, bases);
