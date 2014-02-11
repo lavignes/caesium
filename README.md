@@ -1,5 +1,7 @@
 # Caesium 
 
+[READ THE MANUAL HERE](https://docs.google.com/document/d/1uRPN2AGbbIg6krEcsO_VQ2JaxW7QRNgAc3wUuuS7Hqc/pub)
+
 [![Build Status](https://secure.travis-ci.org/pyrated/caesium.png)](http://travis-ci.org/pyrated/caesium)
 
 Caesium is a register-based virtual machine for a luaVM-like byte-code called ATOMS.
